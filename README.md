@@ -2,6 +2,29 @@
 
 A Python implementation of the standard and high-order dynamic mode decomposition, DMD[1-3] and HODMD[4]. The most time consuming part, the singular value decomposition (SVD) is performed using numpy. Loops over the space are vectorized.
 
+![DMD](images/DMD.png)
+
+## Installation
+
+1. [Recommended] Create a Python environment, e.g. Conda environment:
+
+```bash
+conda create -n dmd pip numpy scipy
+conda activate dmd
+```
+
+2. Clone the GitHub repository:
+
+```bash
+git clone git@github.com:imaliyov/dmd.git
+```
+
+3. Navigate to the `dmd` folder and install the package:
+
+```bash
+pip install .
+```
+
 ## References
 
 1. S. L Brunton and J. N. Kutz, *Data-Driven Science and Engineering: Machine Learning, Dynamical Systems, and Control*, Cambridge University Press, 2022. [DOI: 10.1017/9781108380690](https://doi.org/10.1017/9781108380690)
