@@ -168,3 +168,92 @@ def plot_modes(ax, mode_array, nfirst=None, mode_ampl=None, leg_loc=None, **kwar
 
     loc = 'best' if leg_loc is None else leg_loc
     ax.legend(loc=loc)
+
+
+def plot_x_t_heatmap(data, time_step, ndmd=None, title=None):
+    """
+    Plot the heatmap of spatial-temporal data
+    
+    Parameters
+    ----------
+
+    data : ndarray
+        Array of data to plot
+
+    time_step : float
+        Time step
+
+    ndmd : int, optional
+        Number of snapshots used for DMD
+
+    title : str, optional
+        Title of the plot
+    """
+
+    cmap = plt.cm.get_cmap('coolwarm')  # Colormap for changing color from blue to red
+    ntime = data.shape[1]
+    fig, ax = plt.subplots(1, 1, figsize=(10, 8))
+    im = ax.imshow(data, cmap=cmap, origin='lower', aspect='auto', extent=[0, ntime * time_step, 0, 1])
+    ax.set_xlabel("Time", fontsize=24)
+    ax.set_ylabel("Spatial coordinate", fontsize=24)
+    fig.colorbar(im, ax=ax, label='Value')
+    
+    if ndmd is not None:
+        ax.axvline(x=ndmd * time_step, color='black', linestyle='--')
+
+    if title is not None:
+        ax.set_title(title)
+
+    plt.show()
+
+
+def plot_trajectories(data, time_step, itraj_list, data_extrap=None, ndmd=None):
+    """Plot selected trajectories.
+
+    Parameters
+    ----------
+
+    data : ndarray
+        Array of data to plot. First dimension is spatial, second is temporal.
+
+    data_extrap : ndarray
+        Array of extrapolated data to plot
+
+    time_step : float
+        Time step
+
+    ndmd : int
+        Number of snapshots used for DMD
+
+    itraj_list : list
+        List of trajectories to plot (spatial indices for data)
+    """
+
+    ntime = data.shape[1]
+    time_grid = np.linspace(0.0, time_step * ntime, ntime)
+
+    if data_extrap is not None:
+        ntime_extrap = data_extrap.shape[1]
+        time_grid_extrap = np.linspace(0.0, time_step * ntime_extrap, ntime_extrap)
+
+    for itraj in itraj_list:
+        fig, ax = plt.subplots(1, 1, figsize=(10, 8))
+        plt.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.1)
+        ax.plot(time_grid, data[itraj, :], label='Original')
+        
+        if data_extrap is not None:
+            ax.plot(time_grid_extrap, data_extrap[itraj, :], label='Extrapolated', linestyle='--')
+
+        ax.set_xlabel("Time", fontsize=24)
+        ax.set_ylabel("Value", fontsize=24)
+        ax.set_title(f"Trajectory {itraj}", fontsize=24)
+
+        if ndmd is not None:
+            apply_bar_range(ax, 0, ndmd * time_step, lines=True)
+
+        if data_extrap is not None:
+            ax.legend()
+
+        plt.show()
+
+

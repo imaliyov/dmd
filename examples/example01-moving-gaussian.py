@@ -8,6 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from dmd import dmd, plot_tools
+from matplotlib import colormaps
 
 
 def moving_gaussian(nspace, ntime, time_step, speed=0.05):
@@ -83,7 +84,7 @@ def plot_gaussian(gauss, x_grid, time_step, gauss_extrap=None):
     """
 
     fig, ax = plt.subplots(1, 1, figsize=(12, 8))
-    cmap = plt.cm.get_cmap('coolwarm')  # Colormap for changing color from blue to red
+    cmap = colormaps['coolwarm']
 
     ntime = gauss.shape[1]
     for i in range(ntime):
@@ -111,53 +112,6 @@ def plot_gaussian(gauss, x_grid, time_step, gauss_extrap=None):
     plt.show()
 
 
-def plot_trajectories(gauss, gauss_extrap, time_step, ndmd):
-    """Plot selected trajectories."""
-
-    itraj_list = [0, 500, 5000, 9999]
-
-    ntime = gauss.shape[1]
-    time_grid = np.linspace(0.0, time_step * ntime, ntime)
-
-    ntime_extrap = gauss_extrap.shape[1]
-    time_grid_extrap = np.linspace(0.0, time_step * ntime_extrap, ntime_extrap)
-
-    for itraj in itraj_list:
-        fig, ax = plt.subplots(1, 1, figsize=(10, 8))
-        ax.plot(time_grid, gauss[itraj, :], label='Original')
-        ax.plot(time_grid_extrap, gauss_extrap[itraj, :], label='Extrapolated', linestyle='--')
-        ax.set_xlabel("Time", fontsize=24)
-        ax.set_ylabel("Gaussian value", fontsize=24)
-        ax.set_title(f"Trajectory {itraj}", fontsize=24)
-
-        plot_tools.apply_bar_range(ax, 0, ndmd * time_step, lines=True)
-
-        ax.legend()
-        plt.show()
-
-
-def plot_gaussian_heatmap(gauss, time_step, ndmd=None, title=None):
-    """
-    Plot the moving Gaussian as a heatmap.
-    """
-
-    cmap = plt.cm.get_cmap('coolwarm')  # Colormap for changing color from blue to red
-    ntime = gauss.shape[1]
-    fig, ax = plt.subplots(1, 1, figsize=(10, 8))
-    im = ax.imshow(gauss, cmap=cmap, origin='lower', aspect='auto', extent=[0, ntime * time_step, 0, 1])
-    ax.set_xlabel("Time", fontsize=24)
-    ax.set_ylabel("Position", fontsize=24)
-    fig.colorbar(im, ax=ax, label='Gaussion value')
-    
-    if ndmd is not None:
-        ax.axvline(x=ndmd * time_step, color='black', linestyle='--')
-
-    if title is not None:
-        ax.set_title(title)
-
-    plt.show()
-
-
 def main():
     
     # Number of spatial points
@@ -172,7 +126,7 @@ def main():
 
     # Plot the moving Gaussian
     plot_gaussian(gauss, x_grid, time_step)
-    plot_gaussian_heatmap(gauss, time_step, title='Original')
+    plot_tools.plot_x_t_heatmap(gauss, time_step, title='Original')
 
     # Number of snapshots for DMD
     ndmd = 145
@@ -191,6 +145,10 @@ def main():
     dmd_run.sig_threshold = sig_threshold
     dmd_run.rank = enforce_rank
     dmd_run.time_step = time_step
+    dmd_run.verbose = True
+
+    # Print the information
+    print(dmd_run)
 
     # Run the DMD algorithm
     dmd_run.compute_modes()
@@ -226,9 +184,10 @@ def main():
     gauss_extrap = np.real(gauss_extrap)
 
     plot_gaussian(gauss, x_grid, time_step, gauss_extrap=gauss_extrap)
-    plot_gaussian_heatmap(gauss_extrap, time_step, ndmd=ndmd, title='DMD extrapolation')
+    plot_tools.plot_x_t_heatmap(gauss_extrap, time_step, ndmd=ndmd, title='DMD extrapolation')
 
-    plot_trajectories(gauss, gauss_extrap, time_step, ndmd)
+    itraj_list = [500, 5000, 9999]
+    plot_tools.plot_trajectories(gauss, time_step, itraj_list, data_extrap=gauss_extrap, ndmd=ndmd)
 
 
 if __name__ == "__main__":

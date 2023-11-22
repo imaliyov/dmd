@@ -88,6 +88,10 @@ class dmd():
         info += "\n"
 
         info += f'{"DMD order":>30}: {self.order}\n'
+
+        if self.order > 1:
+            info += f'{"ntshift":>30}: {self.ntshift}\n'
+
         info += f'{"Number of spatial points":>30}: {self.nspace}\n'
         info += f'{"Number of time snapshots":>30}: {self.nsnap}\n'
 
