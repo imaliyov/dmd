@@ -119,3 +119,13 @@ def plot_omegas_on_plane(ax, omega_array, mode_ampl=None, sort=True, fsize=20, t
      ax.set_ylabel(r'Im($\omega^{\mathrm{DMD}}$)', fontsize=fsize)
 
 
+def apply_bar_range(ax, xmin, xmax, lines=False):
+     """
+     Draw a bar range
+     """
+
+     ax.axvspan(xmin, xmax, facecolor='gray', alpha=0.5)
+
+     if lines:
+          ax.axvline(xmin, color='green', ls='-', lw=1.0, zorder=3)
+          ax.axvline(xmax, color='green', ls='-', lw=1.0, zorder=3)
