@@ -113,9 +113,9 @@ def plot_omegas_on_plane(ax, omega_array, mode_ampl=None, sort=True, fsize=20, t
           ax.legend()
 
      if title:
-          ax.set_title('$\mathrm{Im}\{\omega_0\} = $' + f'{omega_array[0].imag:.3e}')
+          ax.set_title(r'$\mathrm{Im}\{\omega_0\} = $' + f'{omega_array[0].imag:.3e}')
 
-     ax.set_xlabel('Re($\omega^{\mathrm{DMD}}$)', fontsize=fsize)
-     ax.set_ylabel('Im($\omega^{\mathrm{DMD}}$)', fontsize=fsize)
+     ax.set_xlabel(r'Re($\omega^{\mathrm{DMD}}$)', fontsize=fsize)
+     ax.set_ylabel(r'Im($\omega^{\mathrm{DMD}}$)', fontsize=fsize)
 
 

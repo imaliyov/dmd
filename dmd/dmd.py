@@ -10,9 +10,8 @@ import pickle
 import numpy as np
 import yaml
 
-from tools import utils, plot_tools
-from tools.timing import TimingGroup, measure_runtime_and_calls
-
+from dmd.tools import utils, plot_tools
+from dmd.tools.timing import TimingGroup, measure_runtime_and_calls
 
 class dmd():
     """

@@ -178,7 +178,7 @@ class TimingGroup:
 
     def __str__(self):
 
-        self.sort()
+        #self.sort()
         width = 60
 
         output = ''

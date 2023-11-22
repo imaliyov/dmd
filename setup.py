@@ -11,6 +11,7 @@ setup(
     long_description_content_type="text/markdown",
     python_requires='>=3.7.12',
     include_package_data=True,
+    packages=find_packages(),
     install_requires=[
         'numpy',
         'pytest',
@@ -19,8 +20,5 @@ setup(
         'matplotlib',
         'scipy'
     ],
-    packages=find_packages(
-        where='./dmd'
-    ),
-    package_dir={"": "dmd"}
 )
+
