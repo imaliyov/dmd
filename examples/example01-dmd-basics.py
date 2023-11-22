@@ -198,10 +198,17 @@ def main():
     # Plot the singular values
     fig, ax = plt.subplots(1, 1, figsize=(10, 8))
     plot_tools.plot_singular(ax, dmd_run.sigma_full_array, dmd_run.sig_threshold, dmd_run.rank, lw=2.5, ls='-', color='gray')
+    plt.show()
 
     # Plot the DMD frequencies
     fig, ax = plt.subplots(1, 1, figsize=(10, 8))
     plot_tools.plot_omegas_on_plane(ax, dmd_run.omega_array, mode_ampl=dmd_run.mode_ampl_array, fsize=30, title=False)
+    plt.show()
+
+    # Plot DMD modes
+    fig, ax = plt.subplots(1, 1, figsize=(10, 8))
+    plot_tools.plot_modes(ax, dmd_run.mode_array, 
+    plt.show()
 
     # Save the DMD info to YAML
     dmd_run.info_to_yaml(path='./')

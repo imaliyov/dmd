@@ -9,9 +9,9 @@ from matplotlib.colors import LogNorm
 from matplotlib.lines import Line2D
 import matplotlib.pyplot as plt
 from matplotlib.ticker import (MultipleLocator, 
-                                         FormatStrFormatter,
-                                         AutoMinorLocator, 
-                                         StrMethodFormatter)
+                               FormatStrFormatter,
+                               AutoMinorLocator, 
+                               StrMethodFormatter)
 
 # Set common figure parameters
 plotparams = {'figure.figsize': (10, 8),
@@ -65,41 +65,41 @@ def plot_singular(ax, sigma, sig_threshold, rank, **kwargs):
 
 
 def plot_omegas_on_plane(ax, omega_array, mode_ampl=None, sort=True, fsize=20, title=True, plot_first=None, index_modes=False, s=100, **kwargs):
-     """
-     Plot the real and imaginary parts of DMD frequencies on a 2D plane
-     """
+    """
+    Plot the real and imaginary parts of DMD frequencies on a 2D plane
+    """
 
-     if mode_ampl is not None:
-          if sort:
-                idx_sort = np.argsort(np.abs(mode_ampl))[::-1]
+    if mode_ampl is not None:
+        if sort:
+            idx_sort = np.argsort(np.abs(mode_ampl))[::-1]
 
-                omega_array = omega_array[idx_sort]
-                mode_ampl = mode_ampl[idx_sort]
+            omega_array = omega_array[idx_sort]
+            mode_ampl = mode_ampl[idx_sort]
 
-                #print(f'{omega_array[0] = }')
+            #print(f'{omega_array[0] = }')
 
-     if plot_first is not None:
-          omega_array = omega_array[:plot_first]
-          mode_ampl = mode_ampl[:plot_first]
+    if plot_first is not None:
+         omega_array = omega_array[:plot_first]
+         mode_ampl = mode_ampl[:plot_first]
 
-     ax.grid(True, which='major', zorder=-5, alpha=0.5)
+    ax.grid(True, which='major', zorder=-5, alpha=0.5)
 
-     # scale according to mode_ample
-     if mode_ampl is None:
-          size = s
+    # scale according to mode_ample
+    if mode_ampl is None:
+         size = s
 
-     else:
-          smin = 1.0
-          smax = 150.0
+    else:
+         smin = 1.0
+         smax = 150.0
 
-          vmin = np.min(np.abs(mode_ampl)) + 1e-11
-          vmax = np.max(np.abs(mode_ampl)) + 1e-11
+         vmin = np.min(np.abs(mode_ampl)) + 1e-11
+         vmax = np.max(np.abs(mode_ampl)) + 1e-11
 
-          norm = LogNorm(vmin=vmin, vmax=vmax)
+         norm = LogNorm(vmin=vmin, vmax=vmax)
 
-          size = norm(np.abs(mode_ampl)+1e-11) * smax
+         size = norm(np.abs(mode_ampl)+1e-11) * smax
 
-          size[size < smin] = smin
+         size[size < smin] = smin
 
      #ax.scatter(omega_array.real * 1e3, omega_array.imag * 1e3, zorder=3.0, s=size, **kwargs)
 
@@ -129,3 +129,37 @@ def apply_bar_range(ax, xmin, xmax, lines=False):
      if lines:
           ax.axvline(xmin, color='green', ls='-', lw=1.0, zorder=3)
           ax.axvline(xmax, color='green', ls='-', lw=1.0, zorder=3)
+
+
+def plot_modes(ax, mode_array, nfirst=None, mode_ampl=None, **kwargs):
+    """Plot DMD modes
+
+    Parameters
+    ----------
+
+    ax : matplotlib axis
+         Axis to plot on
+
+    mode_array : ndarray
+         Array containing the DMD modes
+    
+    nfirst : int
+         Number of modes to plot
+
+    mode_ampl : ndarray
+         Array containing the mode amplitudes. If provided, the modes are sorted according to the amplitude.
+    """
+
+    mode_array_plot = mode_array.copy()
+
+    if mode_ampl is not None:
+         idx_sort = np.argsort(np.abs(mode_ampl))[::-1]
+
+         mode_array_plot = mode_array[idx_sort]
+         mode_ampl = mode_ampl[idx_sort]
+
+
+    nplot = nfirst if nfirst is not None else mode_array_plot.shape[1]
+
+    for imode in range(nplot):
+         ax.plot(mode_array_plot[:, imode], label=imode+1, **kwargs)
