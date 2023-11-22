@@ -22,7 +22,17 @@ git clone git@github.com:imaliyov/dmd.git
 3. Navigate to the `dmd` folder and install the package:
 
 ```bash
+cd dmd
 pip install .
+```
+
+## Examples
+
+Navigate to the `examples` folder and run one of the example files:
+
+```bash
+cd examples
+./example01-dmd-basics.py
 ```
 
 ## References
