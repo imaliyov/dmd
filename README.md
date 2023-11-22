@@ -32,7 +32,7 @@ Navigate to the `examples` folder and run one of the example files:
 
 ```bash
 cd examples
-./example01-dmd-basics.py
+./example<...>.py
 ```
 
 ## References

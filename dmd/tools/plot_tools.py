@@ -86,52 +86,52 @@ def plot_omegas_on_plane(ax, omega_array, mode_ampl=None, sort=True, fsize=20, t
 
     # scale according to mode_ample
     if mode_ampl is None:
-         size = s
+        size = s
 
     else:
-         smin = 1.0
-         smax = 150.0
+        smin = 1.0
+        smax = 150.0
 
-         vmin = np.min(np.abs(mode_ampl)) + 1e-11
-         vmax = np.max(np.abs(mode_ampl)) + 1e-11
+        vmin = np.min(np.abs(mode_ampl)) + 1e-11
+        vmax = np.max(np.abs(mode_ampl)) + 1e-11
 
-         norm = LogNorm(vmin=vmin, vmax=vmax)
+        norm = LogNorm(vmin=vmin, vmax=vmax)
 
-         size = norm(np.abs(mode_ampl)+1e-11) * smax
+        size = norm(np.abs(mode_ampl)+1e-11) * smax
 
-         size[size < smin] = smin
+        size[size < smin] = smin
 
      #ax.scatter(omega_array.real * 1e3, omega_array.imag * 1e3, zorder=3.0, s=size, **kwargs)
 
-     if index_modes:
-          for imode in range(omega_array.shape[0]):
-                ax.plot(omega_array[imode].real * 1e3, omega_array[imode].imag * 1e3, marker='o', ls='', ms=10, label=imode+1, **kwargs)
-     else:
-          ax.scatter(omega_array.real, omega_array.imag, s=size, **kwargs)
+    if index_modes:
+        for imode in range(omega_array.shape[0]):
+            ax.plot(omega_array[imode].real * 1e3, omega_array[imode].imag * 1e3, marker='o', ls='', ms=10, label=imode+1, **kwargs)
+    else:
+        ax.scatter(omega_array.real, omega_array.imag, s=size, **kwargs)
 
-     if index_modes:
-          ax.legend()
+    if index_modes:
+        ax.legend()
 
-     if title:
-          ax.set_title(r'$\mathrm{Im}\{\omega_0\} = $' + f'{omega_array[0].imag:.3e}')
+    if title:
+        ax.set_title(r'$\mathrm{Im}\{\omega_0\} = $' + f'{omega_array[0].imag:.3e}')
 
-     ax.set_xlabel(r'Re($\omega^{\mathrm{DMD}}$)', fontsize=fsize)
-     ax.set_ylabel(r'Im($\omega^{\mathrm{DMD}}$)', fontsize=fsize)
+    ax.set_xlabel(r'Re($\omega^{\mathrm{DMD}}$)', fontsize=fsize)
+    ax.set_ylabel(r'Im($\omega^{\mathrm{DMD}}$)', fontsize=fsize)
 
 
 def apply_bar_range(ax, xmin, xmax, lines=False):
-     """
-     Draw a bar range
-     """
+    """
+    Draw a bar range
+    """
 
-     ax.axvspan(xmin, xmax, facecolor='gray', alpha=0.5)
+    ax.axvspan(xmin, xmax, facecolor='gray', alpha=0.5)
 
-     if lines:
-          ax.axvline(xmin, color='green', ls='-', lw=1.0, zorder=3)
-          ax.axvline(xmax, color='green', ls='-', lw=1.0, zorder=3)
+    if lines:
+        ax.axvline(xmin, color='green', ls='-', lw=1.0, zorder=3)
+        ax.axvline(xmax, color='green', ls='-', lw=1.0, zorder=3)
 
 
-def plot_modes(ax, mode_array, nfirst=None, mode_ampl=None, **kwargs):
+def plot_modes(ax, mode_array, nfirst=None, mode_ampl=None, leg_loc=None, **kwargs):
     """Plot DMD modes
 
     Parameters
@@ -153,13 +153,18 @@ def plot_modes(ax, mode_array, nfirst=None, mode_ampl=None, **kwargs):
     mode_array_plot = mode_array.copy()
 
     if mode_ampl is not None:
-         idx_sort = np.argsort(np.abs(mode_ampl))[::-1]
+        idx_sort = np.argsort(np.abs(mode_ampl))[::-1]
 
-         mode_array_plot = mode_array[idx_sort]
-         mode_ampl = mode_ampl[idx_sort]
-
+        mode_array_plot = mode_array[:, idx_sort]
+        mode_ampl = mode_ampl[idx_sort]
 
     nplot = nfirst if nfirst is not None else mode_array_plot.shape[1]
 
     for imode in range(nplot):
-         ax.plot(mode_array_plot[:, imode], label=imode+1, **kwargs)
+        # Plot the real part
+        ax.plot(mode_array_plot[:, imode].real, label=f'{imode+1} real', **kwargs)
+        # Plot the imaginary part
+        ax.plot(mode_array_plot[:, imode].imag, label=f'{imode+1} imag', ls='--', **kwargs)
+
+    loc = 'best' if leg_loc is None else leg_loc
+    ax.legend(loc=loc)

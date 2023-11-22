@@ -207,7 +207,7 @@ def main():
 
     # Plot DMD modes
     fig, ax = plt.subplots(1, 1, figsize=(10, 8))
-    plot_tools.plot_modes(ax, dmd_run.mode_array, 
+    plot_tools.plot_modes(ax, dmd_run.mode_array, nfirst=5, mode_ampl=dmd_run.mode_ampl_array, leg_loc='upper left')
     plt.show()
 
     # Save the DMD info to YAML
