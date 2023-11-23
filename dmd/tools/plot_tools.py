@@ -170,12 +170,18 @@ def plot_modes(ax, mode_array, nfirst=None, mode_ampl=None, leg_loc=None, **kwar
     ax.legend(loc=loc)
 
 
-def plot_x_t_heatmap(data, time_step, ndmd=None, title=None):
+def plot_x_t_heatmap(fig, ax, data, time_step, ndmd=None, title=None):
     """
     Plot the heatmap of spatial-temporal data
-    
+
     Parameters
     ----------
+
+    fig : matplotlib figure
+        Figure to plot on
+
+    ax : matplotlib axis
+        Axis to plot on
 
     data : ndarray
         Array of data to plot
@@ -192,7 +198,6 @@ def plot_x_t_heatmap(data, time_step, ndmd=None, title=None):
 
     cmap = plt.cm.get_cmap('coolwarm')  # Colormap for changing color from blue to red
     ntime = data.shape[1]
-    fig, ax = plt.subplots(1, 1, figsize=(10, 8))
     im = ax.imshow(data, cmap=cmap, origin='lower', aspect='auto', extent=[0, ntime * time_step, 0, 1])
     ax.set_xlabel("Time", fontsize=24)
     ax.set_ylabel("Spatial coordinate", fontsize=24)
@@ -204,10 +209,8 @@ def plot_x_t_heatmap(data, time_step, ndmd=None, title=None):
     if title is not None:
         ax.set_title(title)
 
-    plt.show()
 
-
-def plot_trajectories(data, time_step, itraj_list, data_extrap=None, ndmd=None):
+def plot_trajectories(data, time_step, itraj_list, data_extrap=None, ndmd=None, xlim=None, ylim=None):
     """Plot selected trajectories.
 
     Parameters
@@ -227,6 +230,13 @@ def plot_trajectories(data, time_step, itraj_list, data_extrap=None, ndmd=None):
 
     itraj_list : list
         List of trajectories to plot (spatial indices for data)
+    
+    xlim : tuple, optional
+        Limits for x axis
+
+    ylim : tuple, optional
+        Limits for y axis
+
     """
 
     ntime = data.shape[1]
@@ -253,6 +263,11 @@ def plot_trajectories(data, time_step, itraj_list, data_extrap=None, ndmd=None):
 
         if data_extrap is not None:
             ax.legend()
+
+        if xlim is not None:
+            ax.set_xlim(xlim)
+        if ylim is not None:
+            ax.set_ylim(ylim)
 
         plt.show()
 

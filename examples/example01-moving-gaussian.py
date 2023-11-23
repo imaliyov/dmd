@@ -126,7 +126,10 @@ def main():
 
     # Plot the moving Gaussian
     plot_gaussian(gauss, x_grid, time_step)
-    plot_tools.plot_x_t_heatmap(gauss, time_step, title='Original')
+    
+    fig, ax = plt.subplots(1, 1, figsize=(10, 8))
+    plot_tools.plot_x_t_heatmap(fig, ax, gauss, time_step, title='Original')
+    plt.show()
 
     # Number of snapshots for DMD
     ndmd = 145
@@ -184,7 +187,10 @@ def main():
     gauss_extrap = np.real(gauss_extrap)
 
     plot_gaussian(gauss, x_grid, time_step, gauss_extrap=gauss_extrap)
-    plot_tools.plot_x_t_heatmap(gauss_extrap, time_step, ndmd=ndmd, title='DMD extrapolation')
+
+    fig, ax = plt.subplots(1, 1, figsize=(10, 8))
+    plot_tools.plot_x_t_heatmap(fig, ax, gauss_extrap, time_step, ndmd=ndmd, title='DMD extrapolation')
+    plt.show()
 
     itraj_list = [500, 5000, 9999]
     plot_tools.plot_trajectories(gauss, time_step, itraj_list, data_extrap=gauss_extrap, ndmd=ndmd)

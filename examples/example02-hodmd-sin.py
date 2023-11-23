@@ -27,16 +27,13 @@ def main():
     wmin = 0.5
     sin_array = np.sin(2 * np.pi * (x_grid[:, np.newaxis] + wmin) * time_grid[np.newaxis, :])
 
-    # constant frequency
-    #sin_array = np.zeros((nspace, ntime), dtype=float)
-    #sin_array[:, :] = np.sin(2 * np.pi * time_grid[np.newaxis, :])
-    print(sin_array.shape)
-
-    #itraj_list = [0, 100, 500, 999]
     itraj_list = [0, 24, 49]
-    plot_tools.plot_trajectories(sin_array, time_step, itraj_list)
+    plot_tools.plot_trajectories(sin_array, time_step, itraj_list, xlim=(0, 20))
 
-    plot_tools.plot_x_t_heatmap(sin_array, time_step, title='Original')
+    fig, ax = plt.subplots(1, 1, figsize=(10, 8))
+    plot_tools.plot_x_t_heatmap(fig, ax, sin_array, time_step, title='Original')
+    ax.set_xlim(0, 20)
+    plt.show()
 
     # First, apply the standard DMD
     ndmd = 5000
@@ -69,9 +66,10 @@ def main():
     sin_array_extrap = np.real(dmd_run.extrapolate())
     print(dmd_run.timings)
 
+
     plot_tools.plot_trajectories(sin_array, time_step, itraj_list, data_extrap=sin_array_extrap, ndmd=ndmd)
 
-    # Now, apply the HODMD
+    # Standard DMD does not work well for this example, therefore we will use HODMD
     HODMD_order = 2
     HODMD_shift = 2
 
@@ -108,7 +106,7 @@ def main():
 
     print(hodmd_run.timings)
 
-    plot_tools.plot_trajectories(sin_array, time_step, itraj_list, data_extrap=sin_array_extrap, ndmd=ndmd)
+    plot_tools.plot_trajectories(sin_array, time_step, itraj_list, data_extrap=sin_array_extrap, ndmd=ndmd, xlim=(60, 80))   
 
 
 if __name__ == "__main__":
