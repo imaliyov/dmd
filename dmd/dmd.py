@@ -13,6 +13,7 @@ import yaml
 from dmd.tools import utils, plot_tools
 from dmd.tools.timing import TimingGroup, measure_runtime_and_calls
 
+
 class dmd():
     """
     DMD class

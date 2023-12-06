@@ -23,6 +23,34 @@ def symmetrize_array(nrow, array_triu):
     return array
 
 
+def assign_attributes(attr_name_list, attr_dict, obj):
+    """
+    Assign attributes to an object
+    
+    Parameters
+    ----------
+
+    attr_name_list : list
+        List of attribute names
+
+    attr_dict : dict
+        Dictionary of attributes, it must contain the keys
+        corresponding to the attribute names
+
+    obj : object
+        Object to assign attributes to
+    """
+
+    for attr_name in attr_name_list:
+
+        if attr_name not in attr_dict.keys():
+            raise ValueError(f'Attribute {attr_name} not found in the attribute dictionary')
+
+        setattr(obj, attr_name, attr_dict[attr_name])
+
+    return
+
+
 def get_size(array, name='array', dump=True):
     """
     Get size of an array in MB
