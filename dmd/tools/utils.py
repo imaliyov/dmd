@@ -72,7 +72,15 @@ def get_size(array, name='array', dump=True):
         Size in MB.
     """
 
-    size_kb = sys.getsizeof(array)/1024.0
+    # Check if the array is a numpy array and calculate size accordingly
+    if isinstance(array, np.ndarray):
+        # Calculate size in bytes for numpy array
+        size_bytes = array.size * array.itemsize
+    else:
+        # Use sys.getsizeof() for other types of arrays
+        size_bytes = sys.getsizeof(array)
+
+    size_kb = size_bytes / 1024.0
 
     if size_kb < 1024.0:
 
