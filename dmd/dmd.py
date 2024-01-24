@@ -143,7 +143,14 @@ class dmd():
         """
         attribute_sizes = {}
         for attr_name, attr_value in self.__dict__.items():
-            attribute_sizes[attr_name] = sys.getsizeof(attr_value)
+            if isinstance(attr_value, np.ndarray):
+                # Calculate size in bytes for numpy array
+                size_bytes = attr_value.size * attr_value.itemsize
+            else:
+                # Use sys.getsizeof() for other types of arrays
+                size_bytes = sys.getsizeof(attr_value)
+
+            attribute_sizes[attr_name] = size_bytes
 
         # Convert sizes to MB
         attribute_sizes_mb = {attr_name: size / (1024 ** 2) for attr_name, size in attribute_sizes.items()}
