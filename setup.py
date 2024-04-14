@@ -18,7 +18,8 @@ setup(
         'PyYAML',
         'pytest-profiling',
         'matplotlib',
-        'scipy'
+        'scipy',
+        'tqdm',
     ],
 )
 

@@ -74,7 +74,7 @@ class dmd():
         self.sigma_array = None
         self.mode_array = None
         self.mode_ampl_array = None
-    
+
         self.omega_array = None
 
     def __str__(self):
@@ -165,7 +165,6 @@ class dmd():
 
         return attribute_sizes
 
-
     def info_to_yaml(self, path='./'):
         """
         Dump the DMD info into a YAML file
@@ -187,7 +186,7 @@ class dmd():
         filepath = os.path.join(path, f'{self.name}.pkl')
 
         self.vprint(f'Writing DMD run to {filepath}')
-        
+
         if self.verbose:
             self.get_attribute_sizes()
 
@@ -208,7 +207,7 @@ class dmd():
 
         R0 = self.snap_array
 
-        nh = nk*ns # the height of Y
+        nh = nk * ns # the height of Y
         nl = np.floor((ncut-ns-1)/ng)+1 # the length of Y
         nl = int(nl)
 
@@ -229,7 +228,7 @@ class dmd():
         """
 
         if self.order > 1:
-            # Number of snaps for one of the shifted 
+            # Number of snaps for one of the shifted
             # X matrices
             nsnap_HODMD= self.nsnap - self.order + 1
 
@@ -244,7 +243,7 @@ class dmd():
                 imax = self.nspace * (iorder + 1)
                 snap_array_HODMD[imin:imax, :] = \
                         self.snap_array[:, iorder:self.nsnap-self.order+iorder + 1]
-            
+
             x1_array = snap_array_HODMD[:, :-1]
             x2_array = snap_array_HODMD[:, 1:]
 
@@ -259,7 +258,6 @@ class dmd():
             x1_array = self.snap_array[:, : - 1]
             x2_array = self.snap_array[:, 1:]
 
-
         return x1_array, x2_array
 
     @measure_runtime_and_calls
@@ -267,7 +265,7 @@ class dmd():
         """
         Core function of DMD. Compute the DMD spatial modes
         and frequencies.
-        
+
         Parameters
         ----------
         self : object
@@ -284,7 +282,7 @@ class dmd():
         # Step 0: setup the X1 ans X2 snapshot matrices
         x1_array, x2_array = self.setup_snap_array()
         #x1_array, x2_array = self.setup_snap_array_slow()
-        
+
         # Step 1: SVD
         self.vprint('SVD on X1...')
 
@@ -297,8 +295,12 @@ class dmd():
             self.rank = sigma_array[
                 sigma_array > self.sig_threshold].shape[0]
 
-        self.vprint(f'Rank: {self.rank}') 
-        self.vprint(f'Done: {t.t_delta:.3f} s\n') 
+        self.vprint(f'Rank: {self.rank}')
+        self.vprint(f'Done: {t.t_delta:.3f} s\n')
+
+        # Save the SVD full matrices
+        self.u_full_array = u_array.copy()
+        self.v_full_array = v_array.copy()
 
         v_array = v_array[:,:self.rank]
         u_array = u_array[:,:self.rank]
@@ -315,7 +317,7 @@ class dmd():
         self.vprint('Compute the A matrix...\n')
         with self.timings.add('compute matrix A') as t:
             a_array = u_array.conj().T @ x2_array \
-                           @ v_array @ sigma_inv 
+                           @ v_array @ sigma_inv
 
         if self.verbose:
             utils.get_size(a_array, name='matrix A')
@@ -332,7 +334,7 @@ class dmd():
         # DMD frequencies
         self.omega_array = -1j * np.log(eig_val) / self.time_step
 
-        # To avoid divergence: set the imag part of omega 
+        # To avoid divergence: set the imag part of omega
         # to zero if it is negative.
         self.omega_array[np.imag(self.omega_array) < 0] = \
         np.real(self.omega_array[np.imag(self.omega_array) < 0])
@@ -376,7 +378,7 @@ class dmd():
             omega_time = np.einsum('r,rt->rt', self.mode_ampl_array, np.exp(omega_time))
 
         with self.timings.add('DMD traj') as t:
-           DMD_traj = self.mode_array @ omega_time 
+           DMD_traj = self.mode_array @ omega_time
 
         with self.timings.add('normalize') as t:
             # Negligible time
@@ -384,13 +386,12 @@ class dmd():
                 np.linalg.norm(self.snap_array[:, :], axis=1) /\
                 np.linalg.norm(DMD_traj[:, :self.nsnap-self.order+1], axis=1)
 
-            #DMD_traj[:,:] = np.einsum('kt,k->kt', 
+            #DMD_traj[:,:] = np.einsum('kt,k->kt',
             #                DMD_traj[:, :], norm_ratio_array[:])
             # Faster implementation
             DMD_traj[:,:] *= norm_ratio_array[:, np.newaxis]
 
         return DMD_traj
-
 
     def run_to_numpy(self):
         """
