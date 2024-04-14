@@ -66,6 +66,8 @@ class dmd():
 
         self.time_step = None
 
+        self.save_svd_matrices = False
+
         self.verbose = False
         self.nspace, self.nsnap = snap_array.shape
 
@@ -299,8 +301,9 @@ class dmd():
         self.vprint(f'Done: {t.t_delta:.3f} s\n')
 
         # Save the SVD full matrices
-        self.u_full_array = u_array.copy()
-        self.v_full_array = v_array.copy()
+        if self.save_svd_matrices:
+            self.u_full_array = u_array.copy()
+            self.v_full_array = v_array.copy()
 
         v_array = v_array[:,:self.rank]
         u_array = u_array[:,:self.rank]
