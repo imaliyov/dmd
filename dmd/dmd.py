@@ -184,7 +184,6 @@ class dmd():
         Dumpe the instance of the Class into a pickle file
         """
 
-
         filepath = os.path.join(path, f'{self.name}.pkl')
 
         self.vprint(f'Writing DMD run to {filepath}')
@@ -232,13 +231,13 @@ class dmd():
         if self.order > 1:
             # Number of snaps for one of the shifted
             # X matrices
-            nsnap_HODMD= self.nsnap - self.order + 1
+            nsnap_HODMD = self.nsnap - self.order + 1
 
             # Spatial dimention of extended array
             nspace_HODMD = self.nspace * self.order
 
             # Construct the extended array of snaps
-            snap_array_HODMD = np.zeros( (nspace_HODMD, nsnap_HODMD), dtype=self.snap_array.dtype)
+            snap_array_HODMD = np.zeros((nspace_HODMD, nsnap_HODMD), dtype=self.snap_array.dtype)
 
             for iorder in range(self.order):
                 imin = self.nspace * iorder
@@ -294,8 +293,7 @@ class dmd():
             v_array = v_array.conj().T
 
         if self.rank is None:
-            self.rank = sigma_array[
-                sigma_array > self.sig_threshold].shape[0]
+            self.rank = sigma_array[sigma_array > self.sig_threshold].shape[0]
 
         self.vprint(f'Rank: {self.rank}')
         self.vprint(f'Done: {t.t_delta:.3f} s\n')
@@ -305,15 +303,15 @@ class dmd():
             self.u_full_array = u_array.copy()
             self.v_full_array = v_array.copy()
 
-        v_array = v_array[:,:self.rank]
-        u_array = u_array[:,:self.rank]
+        v_array = v_array[:, :self.rank]
+        u_array = u_array[:, :self.rank]
 
         self.sigma_full_array = sigma_array
         self.sigma_array = sigma_array[:self.rank]
 
 
         # Inverse of S (it is diagonal, so very fast)
-        sigma_inv = np.diag( 1.0 / self.sigma_array )
+        sigma_inv = np.diag(1.0 / self.sigma_array)
 
         # Step 2: Compute the A matrix in the reduces space
 
@@ -348,20 +346,23 @@ class dmd():
             self.mode_array = x2_array @ v_array \
                               @ sigma_inv @ eig_vec
 
+        if self.verbose:
+            utils.get_size(self.mode_array, name='mode_array')
+
         #if self.order > 1:
         #    self.mode_array = self.mode_array[:self.nspace, :]
         #    x1_array = x1_array[:self.nspace, :]
 
         # Step 5: Compute mode amplitudes
         self.vprint('Compute mode amplitudes b...\n')
-        with self.timings.add('mode ampl') as t:
+        with self.timings.add('mode ampl (pinv)') as t:
             self.mode_ampl_array = \
                 np.linalg.pinv(self.mode_array) \
                 @ x1_array[:, 0]
 
         # Reduce the mode_array to the actual number
         # of spatial points
-        self.mode_array = self.mode_array[:self.nspace,:]
+        self.mode_array = self.mode_array[:self.nspace, :]
 
     @measure_runtime_and_calls
     def extrapolate(self):
@@ -372,6 +373,8 @@ class dmd():
 
         self.vprint(f'Extrapolating dynamics for {self.nsnap_extrap} snaps...')
 
+        self.vprint(f'Memory required for DMD_traj: {self.nspace * self.nsnap_extrap * 16 / 1024**3:.5f} GB')
+
         time_array = self.time_step * np.arange(self.nsnap_extrap)
 
         with self.timings.add('omega x t') as t:
@@ -381,7 +384,7 @@ class dmd():
             omega_time = np.einsum('r,rt->rt', self.mode_ampl_array, np.exp(omega_time))
 
         with self.timings.add('DMD traj') as t:
-           DMD_traj = self.mode_array @ omega_time
+            DMD_traj = self.mode_array @ omega_time
 
         with self.timings.add('normalize') as t:
             # Negligible time
@@ -392,13 +395,9 @@ class dmd():
             #DMD_traj[:,:] = np.einsum('kt,k->kt',
             #                DMD_traj[:, :], norm_ratio_array[:])
             # Faster implementation
-            DMD_traj[:,:] *= norm_ratio_array[:, np.newaxis]
+            DMD_traj[:, :] *= norm_ratio_array[:, np.newaxis]
+
+        if self.verbose:
+            utils.get_size(DMD_traj, 'DMD_traj')
 
         return DMD_traj
-
-    def run_to_numpy(self):
-        """
-        Write the DMD run info into a numpy binary file
-        """
-
-        return
