@@ -377,11 +377,14 @@ class dmd():
 
         time_array = self.time_step * np.arange(self.nsnap_extrap)
 
-        with self.timings.add('omega x t') as t:
+        with self.timings.add('i x omega x t') as t:
             omega_time = \
                 np.einsum('r,t->rt', 1j * self.omega_array, time_array)
 
-            omega_time = np.einsum('r,rt->rt', self.mode_ampl_array, np.exp(omega_time))
+        with self.timings.add('b_l x exp(i x omega x t)') as t:
+            #omega_time = np.einsum('r,rt->rt', self.mode_ampl_array, np.exp(omega_time))
+            # without einsum
+            omega_time = self.mode_ampl_array[:, np.newaxis] * np.exp(omega_time)
 
         with self.timings.add('DMD traj') as t:
             DMD_traj = self.mode_array @ omega_time
@@ -401,3 +404,60 @@ class dmd():
             utils.get_size(DMD_traj, 'DMD_traj')
 
         return DMD_traj
+
+    @measure_runtime_and_calls
+    def extrapolate_space_sum(self):
+        """
+        Extrapolate the DMD dynamics summed over spatial coordinate.
+        compute_modes() method must be ran first.
+        """
+
+        self.vprint(f'Extrapolating dynamics for {self.nsnap_extrap} snaps...')
+
+        sum_mode_array = np.sum(self.mode_array, axis=0)
+
+        # dt, 2dt, 3dt, ...
+        time_array = self.time_step * np.arange(self.nsnap_extrap)
+
+        with self.timings.add('i x omega x t') as t:
+            # w * dt, w * 2dt, w * 3dt, ...
+            omega_time = \
+                np.einsum('r,t->rt', 1j * self.omega_array, time_array)
+
+        with self.timings.add('b_l x exp(i x omega x t)') as t:
+            # b_l * exp(w * l * dt), b_l * exp(w * l * 2dt), ...
+            omega_time = np.einsum('r,rt->rt', self.mode_ampl_array, np.exp(omega_time))
+
+        # Compute the norm. array
+        with self.timings.add('DMD traj') as t:
+            # mode_array: nspace x nmode
+            # omega_time: nmode x nsnap_extrap
+            DMD_traj_nsnap = self.mode_array @ omega_time[:, :self.nsnap-self.order+1]
+
+        with self.timings.add('normalize') as t:
+            # Negligible time, dimension: nspace
+            # snap_array: nspace x nsnap
+            # DMD_traj_nsnap: nspace x nsnap
+            norm_ratio_array = \
+                np.linalg.norm(self.snap_array[:, :], axis=1) / \
+                np.linalg.norm(DMD_traj_nsnap[:, :], axis=1)
+
+        with self.timings.add('modes sum') as t:
+            # mode_array: nspace x nmode
+            # norm_ratio_array: nspace
+            # sum_mode_array: nmode
+            sum_mode_array = np.sum(self.mode_array * norm_ratio_array[:, np.newaxis], axis=0)
+
+        with self.timings.add('DMD_traj_sum') as t:
+            # omega_time: nmode x nsnap_extrap
+            # sum_mode_array: nmode
+            DMD_traj_sum = np.sum(omega_time[:, :] * sum_mode_array[:, np.newaxis], axis=0)
+
+        if self.verbose:
+            utils.get_size(DMD_traj_sum, 'DMD_traj_sum')
+            utils.get_size(norm_ratio_array, 'norm_ratio_array')
+            utils.get_size(sum_mode_array, 'sum_mode_array')
+            utils.get_size(DMD_traj_nsnap, 'DMD_traj_nsnap')
+            utils.get_size(omega_time, 'omega_time')
+
+        return DMD_traj_sum

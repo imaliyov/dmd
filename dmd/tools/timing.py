@@ -106,7 +106,7 @@ class Timing:
         tag_text = self.tag
         lev = self.level
 
-        width = 30
+        width = 40
         lmax = 4
 
         if lev > 0:
@@ -179,7 +179,7 @@ class TimingGroup:
     def __str__(self):
 
         #self.sort()
-        width = 60
+        width = 70
 
         output = ''
         output += f"{'='*width}\n"
@@ -213,8 +213,8 @@ class TimingGroup:
 
         """
 
-        timings_dict = {tag: 
-            {'runtime': round(timing.total_runtime, 8), 'call_count': timing.call_count} 
+        timings_dict = {tag:
+            {'runtime': round(timing.total_runtime, 8), 'call_count': timing.call_count}
             for tag, timing in self.timings.items()
             }
 
@@ -230,7 +230,7 @@ def measure_runtime_and_calls(method):
     def wrapper(self, *args, **kwargs):
         if not hasattr(self, 'timings'):
             # Create TimingGroup instance as an attribute
-            self.timings = TimingGroup()  
+            self.timings = TimingGroup()
         timings = self.timings
         with timings.add(method.__name__, level=1) as t:
             result = method(self, *args, **kwargs)
