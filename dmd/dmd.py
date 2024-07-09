@@ -451,6 +451,7 @@ class dmd():
         with self.timings.add('DMD_traj_sum') as t:
             # omega_time: nmode x nsnap_extrap
             # sum_mode_array: nmode
+            # sum over modes
             DMD_traj_sum = np.sum(omega_time[:, :] * sum_mode_array[:, np.newaxis], axis=0)
 
         if self.verbose:
@@ -460,4 +461,4 @@ class dmd():
             utils.get_size(DMD_traj_nsnap, 'DMD_traj_nsnap')
             utils.get_size(omega_time, 'omega_time')
 
-        return DMD_traj_sum
+        return DMD_traj_sum, self.mode_ampl_array[:] * sum_mode_array[:]
