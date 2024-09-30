@@ -66,7 +66,6 @@ def main():
     sin_array_extrap = np.real(dmd_run.extrapolate())
     print(dmd_run.timings)
 
-
     plot_tools.plot_trajectories(sin_array, time_step, itraj_list, data_extrap=sin_array_extrap, ndmd=ndmd)
 
     # Standard DMD does not work well for this example, therefore we will use HODMD
@@ -106,7 +105,7 @@ def main():
 
     print(hodmd_run.timings)
 
-    plot_tools.plot_trajectories(sin_array, time_step, itraj_list, data_extrap=sin_array_extrap, ndmd=ndmd, xlim=(60, 80))   
+    plot_tools.plot_trajectories(sin_array, time_step, itraj_list, data_extrap=sin_array_extrap, ndmd=ndmd, xlim=(60, 80))
 
 
 if __name__ == "__main__":
