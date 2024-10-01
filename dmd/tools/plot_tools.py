@@ -8,9 +8,9 @@ import numpy as np
 from matplotlib.colors import LogNorm
 from matplotlib.lines import Line2D
 import matplotlib.pyplot as plt
-from matplotlib.ticker import (MultipleLocator, 
+from matplotlib.ticker import (MultipleLocator,
                                FormatStrFormatter,
-                               AutoMinorLocator, 
+                               AutoMinorLocator,
                                StrMethodFormatter)
 
 # Set common figure parameters
@@ -142,7 +142,7 @@ def plot_modes(ax, mode_array, nfirst=None, mode_ampl=None, leg_loc=None, **kwar
 
     mode_array : ndarray
          Array containing the DMD modes
-    
+
     nfirst : int
          Number of modes to plot
 
@@ -202,7 +202,7 @@ def plot_x_t_heatmap(fig, ax, data, time_step, ndmd=None, title=None):
     ax.set_xlabel("Time", fontsize=24)
     ax.set_ylabel("Spatial coordinate", fontsize=24)
     fig.colorbar(im, ax=ax, label='Value')
-    
+
     if ndmd is not None:
         ax.axvline(x=ndmd * time_step, color='black', linestyle='--')
 
@@ -210,7 +210,7 @@ def plot_x_t_heatmap(fig, ax, data, time_step, ndmd=None, title=None):
         ax.set_title(title)
 
 
-def plot_trajectories(data, time_step, itraj_list, data_extrap=None, ndmd=None, xlim=None, ylim=None):
+def plot_trajectories(data, time_step, itraj_list, data_extrap=None, ndmd=None, xlim=None, ylim=None, title=None):
     """Plot selected trajectories.
 
     Parameters
@@ -230,7 +230,7 @@ def plot_trajectories(data, time_step, itraj_list, data_extrap=None, ndmd=None, 
 
     itraj_list : list
         List of trajectories to plot (spatial indices for data)
-    
+
     xlim : tuple, optional
         Limits for x axis
 
@@ -247,10 +247,10 @@ def plot_trajectories(data, time_step, itraj_list, data_extrap=None, ndmd=None, 
         time_grid_extrap = np.linspace(0.0, time_step * ntime_extrap, ntime_extrap)
 
     for itraj in itraj_list:
-        fig, ax = plt.subplots(1, 1, figsize=(10, 8))
+        fig, ax = plt.subplots(1, 1, figsize=(14, 8))
         plt.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.1)
         ax.plot(time_grid, data[itraj, :], label='Original')
-        
+
         if data_extrap is not None:
             ax.plot(time_grid_extrap, data_extrap[itraj, :], label='Extrapolated', linestyle='--')
 
@@ -268,6 +268,9 @@ def plot_trajectories(data, time_step, itraj_list, data_extrap=None, ndmd=None, 
             ax.set_xlim(xlim)
         if ylim is not None:
             ax.set_ylim(ylim)
+
+        if title is not None:
+            ax.set_title(title)
 
         plt.show()
 
