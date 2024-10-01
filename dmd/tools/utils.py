@@ -106,5 +106,7 @@ def get_size(array, name='array', dump=True):
 
 
 def sort_complex_array(array):
-    sorted_indices = np.lexsort((np.angle(array), np.abs(array)))
+    sorted_indices = np.lexsort((-np.abs(array), np.angle(array)))
     return array[sorted_indices]
+
+    #sorted_indices = np.lexsort((np.real(array), np.abs(array)))
