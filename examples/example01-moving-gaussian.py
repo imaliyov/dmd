@@ -60,7 +60,7 @@ def plot_gaussian(gauss, x_grid, time_step, gauss_extrap=None):
 def main():
 
     # Save data for tests reference
-    save_data = False
+    save_data = True
 
     # Number of spatial points
     nspace = 1000
@@ -155,17 +155,20 @@ def main():
         with open('dmd_Gaus_data_5.npy', 'wb') as f:
             np.save(f, gauss[:, :5])
 
+        # Sort based on mode amplitudes
+        idx_sort = np.argsort(np.abs(dmd_run.mode_ampl_array))[::-1]
+
         # First 10 DMD modes
         with open('dmd_Gaus_mode_array_10.npy', 'wb') as f:
-            np.save(f, dmd_run.mode_array[:, :10])
+            np.save(f, dmd_run.mode_array[:, idx_sort[:10]])
 
         # Mode amplitudes
         with open('dmd_Gaus_mode_ampl_array.npy', 'wb') as f:
-            np.save(f, dmd_run.mode_ampl_array)
+            np.save(f, dmd_run.mode_ampl_array[idx_sort])
 
         # DMD frequencies
         with open('dmd_Gaus_omega_array.npy', 'wb') as f:
-            np.save(f, dmd_run.omega_array)
+            np.save(f, dmd_run.omega_array[idx_sort])
 
         # Singular values
         with open('dmd_Gaus_sigma_full_array.npy', 'wb') as f:
