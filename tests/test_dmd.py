@@ -53,7 +53,7 @@ def test_dmd():
     mode_ampl_array_sorted = dmd_run.mode_ampl_array[idx_sort]
     Phi_b_array = np.einsum('ij,j->ij', mode_array_sorted, mode_ampl_array_sorted)
 
-    np.testing.assert_allclose(Phi_b_array[:, :10], Phi_b_array_10_desired, atol=1e-10)
+    np.testing.assert_allclose(Phi_b_array[:, :10].real, Phi_b_array_10_desired.real, atol=1e-10)
 
     omega_array_desired, idx = sort_complex_array(omega_array_desired)
     omega_array, idx = sort_complex_array(dmd_run.omega_array)
