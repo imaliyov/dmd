@@ -178,7 +178,7 @@ def main():
 
         # Extrapolated data, last snapshot
         with open('dmd_Gaus_extrap_999.npy', 'wb') as f:
-            np.save(f, gauss_extrap[999, :])
+            np.save(f, gauss_extrap[999, :].real)
 
 
 if __name__ == "__main__":

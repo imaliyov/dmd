@@ -34,7 +34,7 @@ def test_dmd():
     dmd_run.nsnap_extrap = 200
 
     dmd_run.compute_modes()
-    gauss_extrap = dmd_run.extrapolate()
+    gauss_extrap = dmd_run.extrapolate().real
 
     idx_sort = np.argsort(np.abs(dmd_run.mode_ampl_array))[::-1]
     idx_sort = idx_sort[np.argsort(dmd_run.mode_ampl_array[idx_sort].real)[::-1]]
