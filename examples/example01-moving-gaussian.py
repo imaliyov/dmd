@@ -83,17 +83,17 @@ def main():
     ndmd = 145
 
     # Enforce the rank
-    # enforce_rank = 10
+    enforce_rank = 50
 
     # OR setup a threshold for the singular values
-    enforce_rank = None
-    sig_threshold = 1e-10
+    #enforce_rank = None
+    #sig_threshold = 1e-10
 
     # Create a DMD object
     dmd_run = dmd.dmd(gauss[:, :ndmd])
 
     # Setup the DMD parameters
-    dmd_run.sig_threshold = sig_threshold
+    #dmd_run.sig_threshold = sig_threshold
     dmd_run.rank = enforce_rank
     dmd_run.time_step = time_step
     dmd_run.verbose = True

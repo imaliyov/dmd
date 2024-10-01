@@ -28,8 +28,8 @@ def test_dmd():
     ndmd = 145
     dmd_run = dmd.dmd(gauss[:, :ndmd])
 
-    dmd_run.sig_threshold = 1e-10
-    dmd_run.rank = None
+    #dmd_run.sig_threshold = 1e-10
+    dmd_run.rank = 50
     dmd_run.time_step = 0.1
     dmd_run.verbose = False
     dmd_run.nsnap_extrap = 200
@@ -52,13 +52,8 @@ def test_dmd():
     mode_ampl_array_desired, idx = sort_complex_array(mode_ampl_array_desired)
     mode_ampl_array, idx = sort_complex_array(dmd_run.mode_ampl_array)
 
-    # Multiply modes by mode_ampl
-    Phi_b_array = np.einsum('il,l->l', dmd_run.mode_array, dmd_run.mode_ampl_array)
-    Phi_b_array_sorted, idx_sort = sort_complex_array(Phi_b_array)
-
     np.testing.assert_allclose(omega_array[:10], omega_array_desired[:10], atol=1e-3, rtol=1e-4)
     np.testing.assert_allclose(mode_ampl_array[idx_sort[:10]], mode_ampl_array_desired[idx_sort[:10]], atol=1e-8)
-
 
     #np.testing.assert_allclose(dmd_run.mode_array[:, idx_sort[:10]], mode_array_10_desired, atol=1e-10)
     #np.testing.assert_allclose(dmd_run.omega_array[idx_sort], omega_array_desired, atol=1e-10)
