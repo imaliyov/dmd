@@ -155,22 +155,25 @@ def main():
         with open('dmd_Gaus_data_5.npy', 'wb') as f:
             np.save(f, gauss[:, :5])
 
-        # Sort based on mode amplitudes and then based on the real part of amplitude
-        idx_sort = np.argsort(np.abs(dmd_run.mode_ampl_array))[::-1]
-        idx_sort = idx_sort[np.argsort(dmd_run.mode_ampl_array[idx_sort].real)[::-1]]
-        #idx_sort = np.argsort(np.abs(dmd_run.mode_ampl_array))[::-1]
+        # First 10 largest DMD modes
+        mode_array_sum = np.sum(dmd_run.mode_array, axis=0)
+        idx_sort = np.argsort(np.abs(mode_array_sum))[::-1]
+        mode_array_sorted = dmd_run.mode_array[:, idx_sort]
+        mode_ampl_array_sorted = dmd_run.mode_ampl_array[idx_sort]
+        Phi_b_array = np.einsum('ij,j->ij', mode_array_sorted, mode_ampl_array_sorted)
+        with open('dmd_Gaus_Phi_b_array_10.npy', 'wb') as f:
+            np.save(f, Phi_b_array[:, :10])
 
-        # First 10 DMD modes
         with open('dmd_Gaus_mode_array_10.npy', 'wb') as f:
-            np.save(f, dmd_run.mode_array[:, idx_sort[:10]])
+            np.save(f, dmd_run.mode_array[:, :10])
 
         # Mode amplitudes
         with open('dmd_Gaus_mode_ampl_array.npy', 'wb') as f:
-            np.save(f, dmd_run.mode_ampl_array[idx_sort])
+            np.save(f, dmd_run.mode_ampl_array)
 
         # DMD frequencies
         with open('dmd_Gaus_omega_array.npy', 'wb') as f:
-            np.save(f, dmd_run.omega_array[idx_sort])
+            np.save(f, dmd_run.omega_array)
 
         # Singular values
         with open('dmd_Gaus_sigma_full_array.npy', 'wb') as f:
