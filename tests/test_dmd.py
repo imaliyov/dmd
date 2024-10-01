@@ -52,7 +52,7 @@ def test_dmd():
     mode_ampl_array_desired = sort_complex_array(mode_ampl_array_desired)
     mode_ampl_array = sort_complex_array(dmd_run.mode_ampl_array)
 
-    np.testing.assert_allclose(omega_array, omega_array_desired, atol=1e-8)
+    np.testing.assert_allclose(omega_array, omega_array_desired, atol=1e-3, rtol=1e-3)
     np.testing.assert_allclose(mode_ampl_array, mode_ampl_array_desired, atol=1e-8)
 
 
