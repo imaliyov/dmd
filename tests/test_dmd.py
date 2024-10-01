@@ -28,8 +28,8 @@ def test_dmd():
     ndmd = 145
     dmd_run = dmd.dmd(gauss[:, :ndmd])
 
-    #dmd_run.sig_threshold = 1e-10
-    dmd_run.rank = 50
+    dmd_run.sig_threshold = 1e-10
+    dmd_run.rank = None
     dmd_run.time_step = 0.1
     dmd_run.verbose = False
     dmd_run.nsnap_extrap = 200
