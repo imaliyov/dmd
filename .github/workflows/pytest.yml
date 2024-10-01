@@ -23,4 +23,4 @@ jobs:
       - name: Run tests
         run: |
           cd tests
-          pytest -s -v --duration=0
+          pytest -s -v --durations=0
