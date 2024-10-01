@@ -5,6 +5,7 @@ Test the standard DMD algorithm, first-order based on ./examples/example01-movin
 import numpy as np
 import pytest
 from dmd import dmd, plot_tools, generate_data
+from dmd.tools.utils import sort_complex_array
 
 
 def test_moving_gaussian():
@@ -44,6 +45,16 @@ def test_dmd():
     mode_ampl_array_desired = np.load('./refs/dmd_Gaus_mode_ampl_array.npy')
     sigma_full_array_desired = np.load('./refs/dmd_Gaus_sigma_full_array.npy')
     gauss_extrap_100_desired = np.load('./refs/dmd_Gaus_extrap_100.npy')
+
+    omega_array_desired = sort_complex_array(omega_array_desired)
+    omega_array = sort_complex_array(dmd_run.omega_array)
+
+    mode_ampl_array_desired = sort_complex_array(mode_ampl_array_desired)
+    mode_ampl_array = sort_complex_array(dmd_run.mode_ampl_array)
+
+    np.testing.assert_allclose(omega_array, omega_array_desired, atol=1e-8)
+    np.testing.assert_allclose(mode_ampl_array, mode_ampl_array_desired, atol=1e-8)
+
 
     #np.testing.assert_allclose(dmd_run.mode_array[:, idx_sort[:10]], mode_array_10_desired, atol=1e-10)
     #np.testing.assert_allclose(dmd_run.omega_array[idx_sort], omega_array_desired, atol=1e-10)

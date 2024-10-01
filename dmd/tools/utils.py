@@ -15,7 +15,7 @@ def symmetrize_array(nrow, array_triu):
     row_idx, col_idx = triu_idx
 
     nsnap = array_triu.shape[-1]
-    
+
     array = np.zeros((nrow, nrow, nsnap), dtype=array_triu.dtype)
     array[row_idx, col_idx, :] = array_triu
     array[col_idx, row_idx, :] = array_triu
@@ -26,7 +26,7 @@ def symmetrize_array(nrow, array_triu):
 def assign_attributes(attr_name_list, attr_dict, obj):
     """
     Assign attributes to an object
-    
+
     Parameters
     ----------
 
@@ -103,3 +103,8 @@ def get_size(array, name='array', dump=True):
         print(f'===Size of {name:<10} {str(array.shape):<12} {str(array.dtype):<8}: {size:6.3f} {unit}')
 
     return size, unit
+
+
+def sort_complex_array(array):
+    sorted_indices = np.lexsort((np.angle(array), np.abs(array)))
+    return array[sorted_indices]
