@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   pytest-dmd:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
 
     steps:
       - name: Check out source repository
@@ -16,7 +16,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: |
+        run: uuu|
           python -m pip install --upgrade pip
           pip install .
 

@@ -177,8 +177,8 @@ def main():
             np.save(f, dmd_run.sigma_full_array)
 
         # Extrapolated data, last snapshot
-        with open('dmd_Gaus_extrap_999.npy', 'wb') as f:
-            np.save(f, gauss_extrap[999, :].real)
+        with open('dmd_Gaus_extrap_100.npy', 'wb') as f:
+            np.save(f, gauss_extrap[100, :].real)
 
 
 if __name__ == "__main__":

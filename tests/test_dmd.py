@@ -43,10 +43,10 @@ def test_dmd():
     omega_array_desired = np.load('./refs/dmd_Gaus_omega_array.npy')
     mode_ampl_array_desired = np.load('./refs/dmd_Gaus_mode_ampl_array.npy')
     sigma_full_array_desired = np.load('./refs/dmd_Gaus_sigma_full_array.npy')
-    gauss_extrap_999_desired = np.load('./refs/dmd_Gaus_extrap_999.npy')
+    gauss_extrap_100_desired = np.load('./refs/dmd_Gaus_extrap_100.npy')
 
     #np.testing.assert_allclose(dmd_run.mode_array[:, idx_sort[:10]], mode_array_10_desired, atol=1e-10)
     #np.testing.assert_allclose(dmd_run.omega_array[idx_sort], omega_array_desired, atol=1e-10)
     #np.testing.assert_allclose(dmd_run.mode_ampl_array[idx_sort], mode_ampl_array_desired, atol=1e-10)
     np.testing.assert_allclose(dmd_run.sigma_full_array, sigma_full_array_desired, atol=1e-10, rtol=1e-8)
-    np.testing.assert_allclose(gauss_extrap[999, :], gauss_extrap_999_desired, atol=1e-8, rtol=1e-5)
+    np.testing.assert_allclose(gauss_extrap[100, :], gauss_extrap_100_desired, atol=1e-8, rtol=1e-5)
