@@ -156,21 +156,13 @@ def main():
         with open('dmd_Gaus_data_5.npy', 'wb') as f:
             np.save(f, gauss[:, :5])
 
-        # First 10 largest DMD modes
-        mode_array_sum = np.sum(dmd_run.mode_array, axis=0)
-        mode_array_sum_sorted, idx_sort = sort_complex_array(mode_array_sum)
-        mode_array_sorted = dmd_run.mode_array[:, idx_sort]
-        mode_ampl_array_sorted = dmd_run.mode_ampl_array[idx_sort]
-        Phi_b_array = np.einsum('ij,j->ij', mode_array_sorted, mode_ampl_array_sorted)
-        with open('dmd_Gaus_Phi_b_array_10.npy', 'wb') as f:
-            np.save(f, Phi_b_array[:, :10])
-
-        with open('dmd_Gaus_mode_array_10.npy', 'wb') as f:
-            np.save(f, dmd_run.mode_array[:, :10])
+        # First 10 DMD modes
+        #with open('dmd_Gaus_mode_array_10.npy', 'wb') as f:
+        #    np.save(f, dmd_run.mode_array[:, :10])
 
         # Mode amplitudes
-        with open('dmd_Gaus_mode_ampl_array.npy', 'wb') as f:
-            np.save(f, dmd_run.mode_ampl_array)
+        #with open('dmd_Gaus_mode_ampl_array.npy', 'wb') as f:
+        #    np.save(f, dmd_run.mode_ampl_array)
 
         # DMD frequencies
         with open('dmd_Gaus_omega_array.npy', 'wb') as f:
@@ -180,9 +172,10 @@ def main():
         with open('dmd_Gaus_sigma_full_array.npy', 'wb') as f:
             np.save(f, dmd_run.sigma_full_array)
 
-        # Extrapolated data, last snapshot
-        with open('dmd_Gaus_extrap_100.npy', 'wb') as f:
-            np.save(f, gauss_extrap[100, :].real)
+        # Extrapolated data
+        with open('dmd_Gaus_extrap_10_100_200.npy', 'wb') as f:
+            np.save(f, gauss_extrap[[10, 100, 200], :].real)
+
 
 
 if __name__ == "__main__":

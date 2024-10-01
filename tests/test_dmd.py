@@ -37,39 +37,13 @@ def test_dmd():
     dmd_run.compute_modes()
     gauss_extrap = dmd_run.extrapolate().real
 
-    idx_sort = np.argsort(np.abs(dmd_run.mode_ampl_array))[::-1]
-    idx_sort = idx_sort[np.argsort(dmd_run.mode_ampl_array[idx_sort].real)[::-1]]
-
-    mode_array_10_desired = np.load('./refs/dmd_Gaus_mode_array_10.npy')
     omega_array_desired = np.load('./refs/dmd_Gaus_omega_array.npy')
-    mode_ampl_array_desired = np.load('./refs/dmd_Gaus_mode_ampl_array.npy')
     sigma_full_array_desired = np.load('./refs/dmd_Gaus_sigma_full_array.npy')
-    gauss_extrap_100_desired = np.load('./refs/dmd_Gaus_extrap_100.npy')
-
-    Phi_b_array_10_desired = np.load('./refs/dmd_Gaus_Phi_b_array_10.npy')
-    mode_array_sum = np.sum(dmd_run.mode_array, axis=0)
-    mode_array_sum_sorted, idx_sort = sort_complex_array(mode_array_sum)
-    mode_array_sorted = dmd_run.mode_array[:, idx_sort]
-    mode_ampl_array_sorted = dmd_run.mode_ampl_array[idx_sort]
-    Phi_b_array = np.einsum('ij,j->ij', mode_array_sorted, mode_ampl_array_sorted)
-
-    Phi_b_array_sum = np.sum(Phi_b_array, axis=0)
-    Phi_b_array_10_desired_sum = np.sum(Phi_b_array_10_desired, axis=0)
-
-
-    np.testing.assert_allclose(Phi_b_array_sum[:10], Phi_b_array_10_desired_sum, atol=1e-10, rtol=1e-8)
+    gauss_extrap_desired = np.load('./refs/dmd_Gaus_extrap_10_100_200.npy')
 
     omega_array_desired, idx = sort_complex_array(omega_array_desired)
     omega_array, idx = sort_complex_array(dmd_run.omega_array)
 
-    mode_ampl_array_desired, idx = sort_complex_array(mode_ampl_array_desired)
-    mode_ampl_array, idx = sort_complex_array(dmd_run.mode_ampl_array)
-
     np.testing.assert_allclose(omega_array[:10], omega_array_desired[:10], atol=1e-3, rtol=1e-4)
-    #np.testing.assert_allclose(mode_ampl_array[idx_sort[:10]], mode_ampl_array_desired[idx_sort[:10]], atol=1e-8)
-
-    #np.testing.assert_allclose(dmd_run.mode_array[:, idx_sort[:10]], mode_array_10_desired, atol=1e-10)
-    #np.testing.assert_allclose(dmd_run.omega_array[idx_sort], omega_array_desired, atol=1e-10)
-    #np.testing.assert_allclose(dmd_run.mode_ampl_array[idx_sort], mode_ampl_array_desired, atol=1e-10)
     np.testing.assert_allclose(dmd_run.sigma_full_array, sigma_full_array_desired, atol=1e-10, rtol=1e-8)
-    np.testing.assert_allclose(gauss_extrap[100, :], gauss_extrap_100_desired, atol=1e-6, rtol=1e-4)
+    np.testing.assert_allclose(gauss_extrap[[10, 100, 200], :], gauss_extrap_desired, atol=1e-6, rtol=1e-4)
