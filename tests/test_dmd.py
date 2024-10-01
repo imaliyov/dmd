@@ -37,6 +37,7 @@ def test_dmd():
     gauss_extrap = dmd_run.extrapolate()
 
     idx_sort = np.argsort(np.abs(dmd_run.mode_ampl_array))[::-1]
+    idx_sort = idx_sort[np.argsort(dmd_run.mode_ampl_array[idx_sort].real)[::-1]]
 
     mode_array_10_desired = np.load('./refs/dmd_Gaus_mode_array_10.npy')
     omega_array_desired = np.load('./refs/dmd_Gaus_omega_array.npy')

@@ -155,8 +155,10 @@ def main():
         with open('dmd_Gaus_data_5.npy', 'wb') as f:
             np.save(f, gauss[:, :5])
 
-        # Sort based on mode amplitudes
+        # Sort based on mode amplitudes and then based on the real part of amplitude
         idx_sort = np.argsort(np.abs(dmd_run.mode_ampl_array))[::-1]
+        idx_sort = idx_sort[np.argsort(dmd_run.mode_ampl_array[idx_sort].real)[::-1]]
+        #idx_sort = np.argsort(np.abs(dmd_run.mode_ampl_array))[::-1]
 
         # First 10 DMD modes
         with open('dmd_Gaus_mode_array_10.npy', 'wb') as f:
