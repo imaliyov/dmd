@@ -48,12 +48,12 @@ def test_dmd():
 
     Phi_b_array_10_desired = np.load('./refs/dmd_Gaus_Phi_b_array_10.npy')
     mode_array_sum = np.sum(dmd_run.mode_array, axis=0)
-    idx_sort = np.argsort(np.abs(mode_array_sum))[::-1]
+    mode_array_sum_sorted, idx_sort = sort_complex_array(mode_array_sum)
     mode_array_sorted = dmd_run.mode_array[:, idx_sort]
     mode_ampl_array_sorted = dmd_run.mode_ampl_array[idx_sort]
     Phi_b_array = np.einsum('ij,j->ij', mode_array_sorted, mode_ampl_array_sorted)
 
-    np.testing.assert_allclose(Phi_b_array[:, :10].real, Phi_b_array_10_desired.real, atol=1e-10)
+    np.testing.assert_allclose(Phi_b_array[:, :10], Phi_b_array_10_desired, atol=1e-10)
 
     omega_array_desired, idx = sort_complex_array(omega_array_desired)
     omega_array, idx = sort_complex_array(dmd_run.omega_array)

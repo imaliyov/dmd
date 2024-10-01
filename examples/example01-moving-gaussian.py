@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from dmd import dmd, plot_tools, generate_data
+from dmd.tools.utils import sort_complex_array
 from matplotlib import colormaps
 
 plt.rcParams.update(plot_tools.plotparams)
@@ -157,7 +158,7 @@ def main():
 
         # First 10 largest DMD modes
         mode_array_sum = np.sum(dmd_run.mode_array, axis=0)
-        idx_sort = np.argsort(np.abs(mode_array_sum))[::-1]
+        mode_array_sum_sorted, idx_sort = sort_complex_array(mode_array_sum)
         mode_array_sorted = dmd_run.mode_array[:, idx_sort]
         mode_ampl_array_sorted = dmd_run.mode_ampl_array[idx_sort]
         Phi_b_array = np.einsum('ij,j->ij', mode_array_sorted, mode_ampl_array_sorted)
