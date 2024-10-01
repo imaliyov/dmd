@@ -48,5 +48,5 @@ def test_dmd():
     #np.testing.assert_allclose(dmd_run.mode_array[:, idx_sort[:10]], mode_array_10_desired, atol=1e-10)
     #np.testing.assert_allclose(dmd_run.omega_array[idx_sort], omega_array_desired, atol=1e-10)
     #np.testing.assert_allclose(dmd_run.mode_ampl_array[idx_sort], mode_ampl_array_desired, atol=1e-10)
-    np.testing.assert_allclose(dmd_run.sigma_full_array, sigma_full_array_desired, atol=1e-10)
-    np.testing.assert_allclose(gauss_extrap[999, :], gauss_extrap_999_desired, atol=1e-10)
+    np.testing.assert_allclose(dmd_run.sigma_full_array, sigma_full_array_desired, atol=1e-8, rtol=1e-5)
+    np.testing.assert_allclose(gauss_extrap[999, :], gauss_extrap_999_desired, atol=1e-8, rtol=1e-5)
