@@ -23,7 +23,9 @@ def test_moving_gaussian():
 
 def test_dmd():
 
-    gauss, x_grid, time_grid = generate_data.moving_gaussian(nspace=1000, ntime=200, time_step=0.1)
+    nspace = 1000
+    ntime = 200
+    gauss, x_grid, time_grid = generate_data.moving_gaussian(nspace=nspace, ntime=ntime, time_step=0.1)
 
     ndmd = 145
     dmd_run = dmd.dmd(gauss[:, :ndmd])
@@ -43,6 +45,10 @@ def test_dmd():
 
     omega_array_desired, idx = sort_complex_array(omega_array_desired)
     omega_array, idx = sort_complex_array(dmd_run.omega_array)
+
+    np.testing.assert_equal(dmd_run.rank, 76)
+    np.testing.assert_equal(dmd_run.snap_array.shape, (nspace, ndmd))
+    np.testing.assert_equal(dmd_run.mode_array.shape, (nspace, dmd_run.rank))
 
     np.testing.assert_allclose(omega_array[:10], omega_array_desired[:10], atol=1e-3, rtol=1e-4)
     np.testing.assert_allclose(dmd_run.sigma_full_array, sigma_full_array_desired, atol=1e-10, rtol=1e-8)
