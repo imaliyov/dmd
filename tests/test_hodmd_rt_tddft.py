@@ -136,7 +136,7 @@ def test_dmd_rt_tddft(data):
     dmd_obj = dmd.dmd(time_data[idir, :, idmd_first:idmd_first + ndmd])
 
     dmd_obj.time_step = time_step
-    dmd_obj.verbose = True
+    dmd_obj.verbose = False
 
     dmd_obj.order = 1
     dmd_obj.ntshift = 1
@@ -149,4 +149,11 @@ def test_dmd_rt_tddft(data):
 
     time_data_extrap_desired = np.load('./refs/dmd_H2_extrap_array.npy')
 
+    # DMD Frequencies
+    omega_array = dmd_obj.omega_array.copy()
+    omega_array_desired = np.load('./refs/dmd_H2_omega_array.npy')
+    omega_array, idx = sort_complex_array(omega_array)
+    omega_array_desired, idx = sort_complex_array(omega_array_desired)
+
+    np.testing.assert_allclose(omega_array, omega_array_desired, atol=1e-8)
     np.testing.assert_allclose(time_data_extrap[:10, :], time_data_extrap_desired, atol=1e-8)
