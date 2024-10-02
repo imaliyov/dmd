@@ -154,6 +154,13 @@ def test_dmd_rt_tddft(data):
     omega_array_desired = np.load('./refs/dmd_H2_omega_array.npy')
     omega_array, idx = sort_complex_array(omega_array)
     omega_array_desired, idx = sort_complex_array(omega_array_desired)
-
     np.testing.assert_allclose(omega_array, omega_array_desired, atol=1e-8)
+
+    # Mode amplitudes
+    mode_ampl_array = dmd_obj.mode_ampl_array.copy()
+    mode_ampl_array_desired = np.load('./refs/dmd_H2_mode_ampl_array.npy')
+    mode_ampl_array, idx = sort_complex_array(mode_ampl_array)
+    mode_ampl_array_desired, idx = sort_complex_array(mode_ampl_array_desired)
+    np.testing.assert_allclose(mode_ampl_array, mode_ampl_array_desired, atol=1e-8)
+
     np.testing.assert_allclose(time_data_extrap[:10, :], time_data_extrap_desired, atol=1e-8)
