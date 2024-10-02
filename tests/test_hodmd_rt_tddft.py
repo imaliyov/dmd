@@ -149,6 +149,14 @@ def test_dmd_rt_tddft(data):
 
     time_data_extrap_desired = np.load('./refs/dmd_H2_extrap_array.npy')
 
+    # Snapshot array shape
+    np.testing.assert_equal(dmd_obj.snap_array.shape, (nocc * nvirt, ndmd))
+
+    # Singular values
+    np.testing.assert_equal(dmd_obj.rank, 16)
+    sigma_full_array_disred = np.load('./refs/dmd_H2_sigma_full_array.npy')
+    np.testing.assert_allclose(dmd_obj.sigma_full_array, sigma_full_array_disred, atol=1e-8)
+
     # DMD Frequencies
     omega_array = dmd_obj.omega_array.copy()
     omega_array_desired = np.load('./refs/dmd_H2_omega_array.npy')
