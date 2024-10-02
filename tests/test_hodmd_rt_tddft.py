@@ -127,48 +127,53 @@ def data():
 def test_dmd_rt_tddft(data):
 
     time_data, time_step, nocc, nvirt = data
-    idir = 0
 
+    # Setup a DMD object
+    idir = 0
     idmd_first = 15
     ndmd = 110
     nsnap_extrap = 1500
+    dmd_run = dmd.dmd(time_data[idir, :, idmd_first:idmd_first + ndmd])
 
-    dmd_obj = dmd.dmd(time_data[idir, :, idmd_first:idmd_first + ndmd])
+    # Setup DMD parameters
+    dmd_run.time_step = time_step
+    dmd_run.verbose = False
+    dmd_run.order = 1
+    dmd_run.ntshift = 1
+    dmd_run.compute_modes()
 
-    dmd_obj.time_step = time_step
-    dmd_obj.verbose = False
-
-    dmd_obj.order = 1
-    dmd_obj.ntshift = 1
-
-    dmd_obj.compute_modes()
-
-    dmd_obj.nsnap_extrap = nsnap_extrap
-
-    time_data_extrap = dmd_obj.extrapolate()
-
-    time_data_extrap_desired = np.load('./refs/dmd_H2_extrap_array.npy')
-
-    # Snapshot array shape
-    np.testing.assert_equal(dmd_obj.snap_array.shape, (nocc * nvirt, ndmd))
+    # Shapes
+    np.testing.assert_equal(dmd_run.snap_array.shape, (nocc * nvirt, ndmd))
+    np.testing.assert_equal(dmd_run.rank, 16)
+    np.testing.assert_equal(dmd_run.mode_array.shape, (nocc * nvirt, dmd_run.rank))
 
     # Singular values
-    np.testing.assert_equal(dmd_obj.rank, 16)
     sigma_full_array_disred = np.load('./refs/dmd_H2_sigma_full_array.npy')
-    np.testing.assert_allclose(dmd_obj.sigma_full_array, sigma_full_array_disred, atol=1e-8)
+    np.testing.assert_allclose(dmd_run.sigma_full_array, sigma_full_array_disred, atol=1e-8)
 
     # DMD Frequencies
-    omega_array = dmd_obj.omega_array.copy()
+    omega_array = dmd_run.omega_array.copy()
     omega_array_desired = np.load('./refs/dmd_H2_omega_array.npy')
-    omega_array, idx = sort_complex_array(omega_array)
-    omega_array_desired, idx = sort_complex_array(omega_array_desired)
+    omega_array, _ = sort_complex_array(omega_array)
+    omega_array_desired, _ = sort_complex_array(omega_array_desired)
     np.testing.assert_allclose(omega_array, omega_array_desired, atol=1e-8)
 
     # Mode amplitudes
-    mode_ampl_array = dmd_obj.mode_ampl_array.copy()
+    mode_ampl_array = dmd_run.mode_ampl_array.copy()
     mode_ampl_array_desired = np.load('./refs/dmd_H2_mode_ampl_array.npy')
-    mode_ampl_array, idx = sort_complex_array(mode_ampl_array)
-    mode_ampl_array_desired, idx = sort_complex_array(mode_ampl_array_desired)
+    mode_ampl_array, idx_sort = sort_complex_array(mode_ampl_array)
+    mode_ampl_array_desired, idx_sort = sort_complex_array(mode_ampl_array_desired)
     np.testing.assert_allclose(mode_ampl_array, mode_ampl_array_desired, atol=1e-8)
 
+    # DMD modes
+    mode_array = dmd_run.mode_array.copy()
+    mode_array_desired = np.load('./refs/dmd_H2_mode_array.npy')
+    mode_array = mode_array[:, idx_sort]
+    mode_array_desired = mode_array_desired[:, idx_sort]
+    np.testing.assert_allclose(mode_array, mode_array_desired, atol=1e-8)
+
+    # Extrapolation
+    dmd_run.nsnap_extrap = nsnap_extrap
+    time_data_extrap = dmd_run.extrapolate()
+    time_data_extrap_desired = np.load('./refs/dmd_H2_extrap_array.npy')
     np.testing.assert_allclose(time_data_extrap[:10, :], time_data_extrap_desired, atol=1e-8)
