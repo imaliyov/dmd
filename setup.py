@@ -16,6 +16,7 @@ setup(
         'numpy',
         'pytest',
         'PyYAML',
+        'h5py',
         'pytest-profiling',
         'matplotlib',
         'scipy',
