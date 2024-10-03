@@ -28,6 +28,7 @@ def hodmd_run():
     # Setup DMD parameters
     hodmd_run_loc.time_step = time_step
     hodmd_run_loc.verbose = False
+    # HODMD: order = 2
     hodmd_run_loc.order = 2
     hodmd_run_loc.ntshift = 1
     hodmd_run_loc.nsnap_extrap = nsnap_extrap
