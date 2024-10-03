@@ -57,29 +57,27 @@ def test_dmd_mode_frequencies(dmd_run):
     np.testing.assert_allclose(omega_array, omega_array_desired, atol=1e-8)
 
 
-def test_dmd_modes(dmd_run):
+def test_dmd_mode_amplitudes(dmd_run):
 
     mode_ampl_array = dmd_run.mode_ampl_array.copy()
     mode_ampl_array_desired = np.load('./refs/dmd_H2_mode_ampl_array.npy')
+
+    # Sort the complex mode amplitudes
+    mode_ampl_array_sorted, _ = sort_complex_array(mode_ampl_array)
+    mode_ampl_array_desired_sorted, _ = sort_complex_array(mode_ampl_array_desired)
+    # Take the absolute value because for degenerate modes the sign can be different
+    np.testing.assert_allclose(np.abs(mode_ampl_array_sorted), np.abs(mode_ampl_array_desired_sorted), atol=1e-8)
+
+
+def test_dmd_modes(dmd_run):
+
     mode_array = dmd_run.mode_array.copy()
     mode_array_desired = np.load('./refs/dmd_H2_mode_array.npy')
 
-    # Sort the complex mode amplitudes
-    mode_ampl_array_sorted, idx_sort1 = sort_complex_array(mode_ampl_array)
-    mode_ampl_array_desired_sorted, idx_sort2 = sort_complex_array(mode_ampl_array_desired)
-
-    # Take the absolute value of the complex mode amplitudes because for degenrate modes the sign can be different
-    np.testing.assert_allclose(np.abs(mode_ampl_array_sorted), np.abs(mode_ampl_array_desired_sorted), atol=1e-8)
-
-    # Multiply the modes by their amplitudes
-    Phi_b = np.einsum('il,l->il', mode_array, mode_ampl_array)
-    Phi_b_desired = np.einsum('il,l->il', mode_array_desired, mode_ampl_array_desired)
     # Sort based on absolute value
-    _, idx_sort1 = sort_complex_array(np.sum(Phi_b, axis=0))
-    _, idx_sort2 = sort_complex_array(np.sum(Phi_b_desired, axis=0))
-    Phi_b_sorted = np.abs(Phi_b[:, idx_sort1])
-    Phi_b_desired_sorted = np.abs(Phi_b_desired[:, idx_sort2])
-    np.testing.assert_allclose(Phi_b_sorted, Phi_b_desired_sorted, atol=1e-8)
+    mode_array_sorted, _ = sort_complex_array(np.sum(mode_array, axis=0))
+    mode_array_desired_sorted, _ = sort_complex_array(np.sum(mode_array_desired, axis=0))
+    np.testing.assert_allclose(mode_array_sorted, mode_array_desired_sorted, atol=1e-8)
 
 
 def test_dmd_extrapolation(dmd_run):
