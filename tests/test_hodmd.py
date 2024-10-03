@@ -78,10 +78,6 @@ def test_hodmd_modes(hodmd_run):
     Phi_b_desired = np.einsum('il,l->il', mode_array_desired, mode_ampl_array_desired)
     np.testing.assert_allclose(Phi_b, Phi_b_desired, atol=1e-8)
 
-    mode_array = mode_array[:, idx_sort1]
-    mode_array_desired = mode_array_desired[:, idx_sort2]
-    np.testing.assert_allclose(mode_array, mode_array_desired, atol=1e-8)
-
 
 def test_extrapolation(hodmd_run):
 

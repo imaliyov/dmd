@@ -59,20 +59,22 @@ def test_mode_frequencies(dmd_run):
 
 def test_dmd_modes(dmd_run):
 
-    return
     mode_ampl_array = dmd_run.mode_ampl_array.copy()
     mode_ampl_array_desired = np.load('./refs/dmd_H2_mode_ampl_array.npy')
-    mode_ampl_array, idx_sort = sort_complex_array(mode_ampl_array)
-    mode_ampl_array_desired, idx_sort = sort_complex_array(mode_ampl_array_desired)
-    mode_ampl_array = np.abs(mode_ampl_array)
-    mode_ampl_array_desired = np.abs(mode_ampl_array_desired)
-    np.testing.assert_allclose(mode_ampl_array, mode_ampl_array_desired, atol=1e-8)
-
     mode_array = dmd_run.mode_array.copy()
     mode_array_desired = np.load('./refs/dmd_H2_mode_array.npy')
-    mode_array = mode_array[:, idx_sort]
-    mode_array_desired = mode_array_desired[:, idx_sort]
-    np.testing.assert_allclose(mode_array, mode_array_desired, atol=1e-8)
+
+    # Sort the complex mode amplitudes
+    mode_ampl_array_sorted, idx_sort1 = sort_complex_array(mode_ampl_array)
+    mode_ampl_array_desired_sorted, idx_sort2 = sort_complex_array(mode_ampl_array_desired)
+
+    # Take the absolute value of the complex mode amplitudes because for degenrate modes the sign can be different
+    np.testing.assert_allclose(np.abs(mode_ampl_array_sorted), np.abs(mode_ampl_array_desired_sorted), atol=1e-8)
+
+    # Multiply the modes by their amplitudes
+    Phi_b = np.einsum('il,l->il', mode_array, mode_ampl_array)
+    Phi_b_desired = np.einsum('il,l->il', mode_array_desired, mode_ampl_array_desired)
+    np.testing.assert_allclose(Phi_b, Phi_b_desired, atol=1e-8)
 
 
 def test_extrapolation(dmd_run):
