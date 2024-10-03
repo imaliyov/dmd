@@ -4,69 +4,15 @@
 Basic example of the DMD usage.
 """
 
+import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
-from dmd import dmd, plot_tools
+from dmd import dmd, plot_tools, generate_data
+from dmd.tools.utils import sort_complex_array
 from matplotlib import colormaps
 
-
-def moving_gaussian(nspace, ntime, time_step, speed=0.05):
-    """
-    A Gaussian moving in time.
-    Normalized Gaussian form: f(x) = exp(-(x - mu) ** 2 / (2 * sigma ** 2)) / (sqrt(2 * pi) * sigma)
-    where mu is the mean and sigma is the standard deviation.
-    
-    Parameters
-    ----------
-
-    nspace : int
-        Number of spatial points.
-
-    ntime : int
-        Number of time points.
-
-    time_step : float
-        Time step.
-
-    speed : float, optional
-        Speed of the shift of the Gaussian.
-
-    plot : bool, optional
-        If True, plot the Gaussian.
-
-    Returns
-    -------
-
-    gauss : ndarray
-        Array containing the Gaussian, first index is space and second is time.
-
-    x_grid : ndarray
-        Spatial grid.
-
-    time_grid : ndarray
-        Time grid.
-    """
-
-    gauss = np.zeros((nspace, ntime), dtype=float)
-
-    # Spatial and time grids
-    x_grid = np.linspace(0.0, 1.0, nspace)
-    time_grid = np.linspace(0.0, time_step * ntime, ntime)
-
-    # Gaussian parameters
-    mu_start = 0.1
-    sigma_start = 0.01
-    sigma_end = 0.08
-
-    # Laws of motion for mean and standard deviation
-    mu_array = mu_start + speed * time_grid
-    sigma_array = sigma_start + (sigma_end - sigma_start) * time_grid / (time_step * ntime)
-
-    # Gaussian with moving mean and standard deviation
-    gauss[:, :] = np.exp(-(x_grid[:, None] - mu_array[None, :]) ** 2 / (2 * sigma_array[None, :] ** 2)) / (np.sqrt(2 * np.pi) * sigma_array[None, :])
-
-    return gauss, x_grid, time_grid
+plt.rcParams.update(plot_tools.plotparams)
 
 
 def plot_gaussian(gauss, x_grid, time_step, gauss_extrap=None):
@@ -113,20 +59,23 @@ def plot_gaussian(gauss, x_grid, time_step, gauss_extrap=None):
 
 
 def main():
-    
+
+    # Save data for tests reference
+    save_data = True
+
     # Number of spatial points
-    nspace = 10000
+    nspace = 1000
     # Number of time points
     ntime = 200
     # Time step
     time_step = 0.1
-    
+
     # Create a sample data, the first dimension is space and second is time
-    gauss, x_grid, time_grid = moving_gaussian(nspace, ntime, time_step)
+    gauss, x_grid, time_grid = generate_data.moving_gaussian(nspace, ntime, time_step)
 
     # Plot the moving Gaussian
     plot_gaussian(gauss, x_grid, time_step)
-    
+
     fig, ax = plt.subplots(1, 1, figsize=(10, 8))
     plot_tools.plot_x_t_heatmap(fig, ax, gauss, time_step, title='Original')
     plt.show()
@@ -135,7 +84,7 @@ def main():
     ndmd = 145
 
     # Enforce the rank
-    # enforce_rank = 10
+    #enforce_rank = 50
 
     # OR setup a threshold for the singular values
     enforce_rank = None
@@ -164,11 +113,15 @@ def main():
     # Plot the DMD frequencies
     fig, ax = plt.subplots(1, 1, figsize=(10, 8))
     plot_tools.plot_omegas_on_plane(ax, dmd_run.omega_array, mode_ampl=dmd_run.mode_ampl_array, fsize=30, title=False)
+    ax.set_title('DMD frequencies')
     plt.show()
 
     # Plot DMD modes
     fig, ax = plt.subplots(1, 1, figsize=(10, 8))
     plot_tools.plot_modes(ax, dmd_run.mode_array, nfirst=5, mode_ampl=dmd_run.mode_ampl_array, leg_loc='upper left')
+    ax.set_title('DMD modes')
+    ax.set_xlabel('coordinate x')
+    ax.set_ylabel('DMD mode')
     plt.show()
 
     # Save the DMD info to YAML
@@ -192,8 +145,36 @@ def main():
     plot_tools.plot_x_t_heatmap(fig, ax, gauss_extrap, time_step, ndmd=ndmd, title='DMD extrapolation')
     plt.show()
 
-    itraj_list = [500, 5000, 9999]
+    #itraj_list = [500, 5000, 9999]
+    itraj_list = [50, 500, 999]
     plot_tools.plot_trajectories(gauss, time_step, itraj_list, data_extrap=gauss_extrap, ndmd=ndmd)
+
+    # Save data to numpy binary files
+    if save_data:
+
+        # Initial data, first 5 snapshots
+        with open('dmd_Gaus_data_5.npy', 'wb') as f:
+            np.save(f, gauss[:, :5])
+
+        # First 10 DMD modes
+        #with open('dmd_Gaus_mode_array_10.npy', 'wb') as f:
+        #    np.save(f, dmd_run.mode_array[:, :10])
+
+        # Mode amplitudes
+        #with open('dmd_Gaus_mode_ampl_array.npy', 'wb') as f:
+        #    np.save(f, dmd_run.mode_ampl_array)
+
+        # DMD frequencies
+        with open('dmd_Gaus_omega_array.npy', 'wb') as f:
+            np.save(f, dmd_run.omega_array)
+
+        # Singular values
+        with open('dmd_Gaus_sigma_full_array.npy', 'wb') as f:
+            np.save(f, dmd_run.sigma_full_array)
+
+        # Extrapolated data
+        with open('dmd_Gaus_extrap_10_100_200.npy', 'wb') as f:
+            np.save(f, gauss_extrap[[10, 100, 200], :].real)
 
 
 if __name__ == "__main__":

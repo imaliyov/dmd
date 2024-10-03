@@ -7,7 +7,7 @@ Example of the HODMD usage.
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
-from dmd import dmd, plot_tools
+from dmd import dmd, plot_tools, generate_data
 
 
 def main():
@@ -18,14 +18,7 @@ def main():
     ntime = 10000
     time_step = 0.01
 
-    # Spatial and time grids
-    x_grid = np.linspace(0.0, 1.0, nspace)
-    time_grid = np.linspace(0.0, time_step * ntime, ntime)
-
-    # The function: sin(2*pi*x*t)
-    # The frequency of sin increases with x
-    wmin = 0.5
-    sin_array = np.sin(2 * np.pi * (x_grid[:, np.newaxis] + wmin) * time_grid[np.newaxis, :])
+    sin_array, x_grid, time_grid = generate_data.sin_array(nspace, ntime, time_step)
 
     itraj_list = [0, 24, 49]
     plot_tools.plot_trajectories(sin_array, time_step, itraj_list, xlim=(0, 20))
@@ -51,12 +44,14 @@ def main():
     fig, ax = plt.subplots(1, 1, figsize=(10, 8))
     plt.subplots_adjust(left=0.15)
     plot_tools.plot_singular(ax, dmd_run.sigma_full_array, dmd_run.sig_threshold, dmd_run.rank, lw=2.5, ls='-', color='gray')
+    ax.set_title('Standard DMD: Singular values')
     plt.show()
 
     # Plot the DMD frequencies
     fig, ax = plt.subplots(1, 1, figsize=(10, 8))
     plt.subplots_adjust(left=0.15)
     plot_tools.plot_omegas_on_plane(ax, dmd_run.omega_array, mode_ampl=dmd_run.mode_ampl_array, fsize=30, title=False)
+    ax.set_title('Standard DMD: DMD frequencies')
     plt.show()
 
     # Number of snapshots for prediction
@@ -66,14 +61,12 @@ def main():
     sin_array_extrap = np.real(dmd_run.extrapolate())
     print(dmd_run.timings)
 
-
-    plot_tools.plot_trajectories(sin_array, time_step, itraj_list, data_extrap=sin_array_extrap, ndmd=ndmd)
+    plot_tools.plot_trajectories(sin_array, time_step, itraj_list, data_extrap=sin_array_extrap, ndmd=ndmd, title='Standard DMD extrapolation')
 
     # Standard DMD does not work well for this example, therefore we will use HODMD
     HODMD_order = 2
     HODMD_shift = 2
 
-    ndmd = 5000
     hodmd_run = dmd.dmd(sin_array[:, :ndmd])
 
     hodmd_run.order = HODMD_order
@@ -90,12 +83,14 @@ def main():
     fig, ax = plt.subplots(1, 1, figsize=(10, 8))
     plt.subplots_adjust(left=0.15)
     plot_tools.plot_singular(ax, hodmd_run.sigma_full_array, hodmd_run.sig_threshold, hodmd_run.rank, lw=2.5, ls='-', color='gray')
+    ax.set_title('HODMD: Singular values')
     plt.show()
 
     # Plot the DMD frequencies
     fig, ax = plt.subplots(1, 1, figsize=(10, 8))
     plt.subplots_adjust(left=0.15)
     plot_tools.plot_omegas_on_plane(ax, hodmd_run.omega_array, mode_ampl=hodmd_run.mode_ampl_array, fsize=30, title=False)
+    ax.set_title('HODMD: DMD frequencies')
     plt.show()
 
     # Number of snapshots for prediction
@@ -106,7 +101,7 @@ def main():
 
     print(hodmd_run.timings)
 
-    plot_tools.plot_trajectories(sin_array, time_step, itraj_list, data_extrap=sin_array_extrap, ndmd=ndmd, xlim=(60, 80))   
+    plot_tools.plot_trajectories(sin_array, time_step, itraj_list, data_extrap=sin_array_extrap, ndmd=ndmd, title='HODMD extrapolation')
 
 
 if __name__ == "__main__":
