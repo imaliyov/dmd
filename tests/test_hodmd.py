@@ -7,7 +7,6 @@ import numpy as np
 import pytest
 from dmd import dmd, plot_tools, generate_data
 from dmd.tools.utils import sort_complex_array, read_rt_tddft_data
-import matplotlib.pyplot as plt
 
 
 @pytest.fixture(scope="module")
