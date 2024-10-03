@@ -37,20 +37,20 @@ def hodmd_run():
     return hodmd_run_loc
 
 
-def test_shapes(hodmd_run):
+def test_hodmd_shapes(hodmd_run):
 
     np.testing.assert_equal(hodmd_run.rank, 30)
     np.testing.assert_equal(hodmd_run.snap_array.shape, (181, 110))
     np.testing.assert_equal(hodmd_run.mode_array.shape, (181, 30))
 
 
-def test_singular_values(hodmd_run):
+def test_hodmd_singular_values(hodmd_run):
 
     sigma_full_array_disred = np.load('./refs/hodmd_H2_sigma_full_array.npy')
     np.testing.assert_allclose(hodmd_run.sigma_full_array, sigma_full_array_disred, atol=1e-8)
 
 
-def test_mode_frequencies(hodmd_run):
+def test_hodmd_mode_frequencies(hodmd_run):
 
     omega_array = hodmd_run.omega_array.copy()
     omega_array_desired = np.load('./refs/hodmd_H2_omega_array.npy')
@@ -82,7 +82,7 @@ def test_hodmd_modes(hodmd_run):
     np.testing.assert_allclose(Phi_b_sorted, Phi_b_desired_sorted, atol=1e-8)
 
 
-def test_extrapolation(hodmd_run):
+def test_hodmd_extrapolation(hodmd_run):
 
     time_data_extrap = hodmd_run.extrapolate().real
     # Extrapolation array is a dipole moment, sum over the states of PD matrix

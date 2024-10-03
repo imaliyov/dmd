@@ -35,20 +35,20 @@ def dmd_run():
     return dmd_run_loc
 
 
-def test_shapes(dmd_run):
+def test_dmd_shapes(dmd_run):
 
     np.testing.assert_equal(dmd_run.rank, 16)
     np.testing.assert_equal(dmd_run.snap_array.shape, (181, 110))
     np.testing.assert_equal(dmd_run.mode_array.shape, (181, 16))
 
 
-def test_singular_values(dmd_run):
+def test_dmd_singular_values(dmd_run):
 
     sigma_full_array_disred = np.load('./refs/dmd_H2_sigma_full_array.npy')
     np.testing.assert_allclose(dmd_run.sigma_full_array, sigma_full_array_disred, atol=1e-8)
 
 
-def test_mode_frequencies(dmd_run):
+def test_dmd_mode_frequencies(dmd_run):
 
     omega_array = dmd_run.omega_array.copy()
     omega_array_desired = np.load('./refs/dmd_H2_omega_array.npy')
@@ -80,7 +80,7 @@ def test_dmd_modes(dmd_run):
     np.testing.assert_allclose(Phi_b_sorted, Phi_b_desired_sorted, atol=1e-8)
 
 
-def test_extrapolation(dmd_run):
+def test_dmd_extrapolation(dmd_run):
 
     time_data_extrap = dmd_run.extrapolate().real
     # Extrapolation array is a dipole moment, sum over the states of PD matrix
