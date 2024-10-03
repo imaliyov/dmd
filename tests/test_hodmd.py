@@ -67,8 +67,8 @@ def test_hodmd_modes(hodmd_run):
     mode_array_desired = np.load('./refs/hodmd_H2_mode_array.npy')
 
     # Sort the complex mode amplitudes
-    mode_ampl_array_sorted, idx_sort1 = sort_complex_array(mode_ampl_array)
-    mode_ampl_array_desired_sorted, idx_sort2 = sort_complex_array(mode_ampl_array_desired)
+    mode_ampl_array_sorted, _ = sort_complex_array(mode_ampl_array)
+    mode_ampl_array_desired_sorted, _ = sort_complex_array(mode_ampl_array_desired)
 
     # Take the absolute value of the complex mode amplitudes because for degenrate modes the sign can be different
     np.testing.assert_allclose(np.abs(mode_ampl_array_sorted), np.abs(mode_ampl_array_desired_sorted), atol=1e-8)
@@ -76,7 +76,9 @@ def test_hodmd_modes(hodmd_run):
     # Multiply the modes by their amplitudes
     Phi_b = np.einsum('il,l->il', mode_array, mode_ampl_array)
     Phi_b_desired = np.einsum('il,l->il', mode_array_desired, mode_ampl_array_desired)
-    # Sort based on the mode amplitudes
+    # Sort based on absolute value
+    _, idx_sort1 = sort_complex_array(np.sum(Phi_b, axis=0))
+    _, idx_sort2 = sort_complex_array(np.sum(Phi_b_desired, axis=0))
     Phi_b_sorted = Phi_b[:, idx_sort1]
     Phi_b_desired_sorted = Phi_b_desired[:, idx_sort2]
     np.testing.assert_allclose(Phi_b_sorted, Phi_b_desired_sorted, atol=1e-8)
