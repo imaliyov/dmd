@@ -74,7 +74,10 @@ def test_dmd_modes(dmd_run):
     # Multiply the modes by their amplitudes
     Phi_b = np.einsum('il,l->il', mode_array, mode_ampl_array)
     Phi_b_desired = np.einsum('il,l->il', mode_array_desired, mode_ampl_array_desired)
-    np.testing.assert_allclose(Phi_b, Phi_b_desired, atol=1e-8)
+    # Sort based on the mode amplitudes
+    Phi_b_sorted = Phi_b[:, idx_sort1]
+    Phi_b_desired_sorted = Phi_b_desired[:, idx_sort2]
+    np.testing.assert_allclose(Phi_b_sorted, Phi_b_desired_sorted, atol=1e-8)
 
 
 def test_extrapolation(dmd_run):
