@@ -59,7 +59,7 @@ def test_mode_frequencies(hodmd_run):
     np.testing.assert_allclose(omega_array, omega_array_desired, atol=1e-8)
 
 
-def test_dmd_modes(hodmd_run):
+def test_hodmd_modes(hodmd_run):
 
     mode_ampl_array = hodmd_run.mode_ampl_array.copy()
     mode_ampl_array_desired = np.load('./refs/hodmd_H2_mode_ampl_array.npy')
