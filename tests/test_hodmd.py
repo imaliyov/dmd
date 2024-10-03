@@ -79,7 +79,8 @@ def test_hodmd_modes(hodmd_run):
     # Sort based on absolute value
     mode_array_sorted, _ = sort_complex_array(np.sum(mode_array, axis=0))
     mode_array_desired_sorted, _ = sort_complex_array(np.sum(mode_array_desired, axis=0))
-    np.testing.assert_allclose(mode_array_sorted, mode_array_desired_sorted, atol=1e-8)
+    # Take the absolute value because for degenerate modes the sign can be different
+    np.testing.assert_allclose(np.abs(mode_array_sorted), np.abs(mode_array_desired_sorted), atol=1e-8)
 
 
 def test_hodmd_extrapolation(hodmd_run):
