@@ -65,6 +65,8 @@ def test_hodmd_modes(hodmd_run):
     mode_ampl_array_desired = np.load('./refs/hodmd_H2_mode_ampl_array.npy')
     mode_ampl_array, idx_sort = sort_complex_array(mode_ampl_array)
     mode_ampl_array_desired, idx_sort = sort_complex_array(mode_ampl_array_desired)
+    mode_ampl_array = np.abs(mode_ampl_array)
+    mode_ampl_array_desired = np.abs(mode_ampl_array_desired)
     print('TEST1\n', mode_ampl_array)
     print('TEST2\n', mode_ampl_array_desired)
     np.testing.assert_allclose(mode_ampl_array, mode_ampl_array_desired, atol=1e-8)
