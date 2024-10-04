@@ -1,5 +1,5 @@
 """
-Test DMD based on the RT-TDDFT data from the H2 molecule.
+Test High-order DMD (HODMD) based on the RT-TDDFT data from the H2 molecule.
 """
 
 import h5py
@@ -21,7 +21,6 @@ def hodmd_run():
     idir = 0
     idmd_first = 15
     ndmd = 110
-    nsnap_extrap = 1500
     hodmd_run_loc = dmd.dmd(time_data[idir, :, idmd_first:idmd_first + ndmd])
 
     # Setup DMD parameters
@@ -30,7 +29,7 @@ def hodmd_run():
     # HODMD: order = 2
     hodmd_run_loc.order = 2
     hodmd_run_loc.ntshift = 1
-    hodmd_run_loc.nsnap_extrap = nsnap_extrap
+    hodmd_run_loc.nsnap_extrap = 1500
     hodmd_run_loc.compute_modes()
 
     return hodmd_run_loc
