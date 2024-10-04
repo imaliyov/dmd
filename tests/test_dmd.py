@@ -21,7 +21,6 @@ def dmd_run():
     idir = 0
     idmd_first = 15
     ndmd = 110
-    nsnap_extrap = 1500
     dmd_run_loc = dmd.dmd(time_data[idir, :, idmd_first:idmd_first + ndmd])
 
     # Setup DMD parameters
@@ -29,7 +28,7 @@ def dmd_run():
     dmd_run_loc.verbose = False
     dmd_run_loc.order = 1
     dmd_run_loc.ntshift = 1
-    dmd_run_loc.nsnap_extrap = nsnap_extrap
+    dmd_run_loc.nsnap_extrap = 1500
     dmd_run_loc.compute_modes()
 
     return dmd_run_loc

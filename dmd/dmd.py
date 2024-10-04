@@ -10,8 +10,9 @@ import pickle
 import numpy as np
 import yaml
 
-from dmd.tools import utils, plot_tools
+from dmd.tools.utils import get_size
 from dmd.tools.timing import TimingGroup, measure_runtime_and_calls
+from dmd.tools.edmd_tools import sample_rff_gaussian, RFF_Finite
 
 
 class dmd():
@@ -34,11 +35,41 @@ class dmd():
         Num of points in space
 
     nsnap : int
-        Number of time snapshots used for DMD
+        Number of time snapshots used for DMD.
+
+    nsnap_extrap : int
+        Number of time snapshots for the extrapolation.
+
+    time_step : float
+        Time step between the snapshots.
+
+    save_svd_matrices : bool
+        Save the full SVD matrices.
+
+    rank : int
+        Rank of the SVD of the X1 matrix. Dimension of the reduced space.
+
+    snap_array : array
+        The array of snapshots, complex or real.
+
+    sigma_array : array
+        Singular values of the SVD.
+
+    mode_array : array
+        DMD modes.
+
+    mode_ampl_array : array
+        Mode amplitudes.
+
+    omega_array : array
+        DMD frequencies.
 
     Methods
     -------
 
+    compute_modes() : Compute the DMD modes and frequencies
+
+    extrapolate() : Extrapolate the DMD dynamics
     """
 
     def __init__(self, snap_array):
@@ -55,8 +86,16 @@ class dmd():
         self.timings = TimingGroup('DMD')
 
         self.name = 'dmd'
+
+        # High-order DMD (HODMD) parameters
         self.order = 1
         self.ntshift = 1
+
+        # Extended DMD (EDMD) parameters
+        self.EDMD = False
+        self.EDMD_sigma = 10
+        self.EDMD_nfreq = 500
+        self.EDMD_random_seed = None
 
         self.sig_threshold = 1e-11
         self.rank = None
@@ -86,15 +125,11 @@ class dmd():
 
         info = '\n'
         info += f"{'=' * 60}\n"
-        info += f"{'=' * 24} DMD details {'=' * 23}\n"
+        info += f"{' DMD parameters ':=^60}\n"
         info += f"{'=' * 60}\n"
         info += "\n"
 
-        info += f'{"DMD order":>30}: {self.order}\n'
-
-        if self.order > 1:
-            info += f'{"ntshift":>30}: {self.ntshift}\n'
-
+        # Basic
         info += f'{"Number of spatial points":>30}: {self.nspace}\n'
         info += f'{"Number of time snapshots":>30}: {self.nsnap}\n'
 
@@ -102,6 +137,19 @@ class dmd():
             info += f'{"Max number of singular values":>30}: {self.rank}\n'
         else:
             info += f'{"Singular values threshold":>30}: {self.sig_threshold}\n'
+
+        # HODMD
+        info += f'{"DMD order":>30}: {self.order}\n'
+
+        if self.order > 1:
+            info += f'{"ntshift":>30}: {self.ntshift}\n'
+
+        # EDMD
+        info += f'{"EDMD":>30}: {self.EDMD}\n'
+        if self.EDMD:
+            info += f'{"Number of frequencies":>30}: {self.EDMD_nfreq}\n'
+            info += f'{"Sigma":>30}: {self.EDMD_sigma}\n'
+            info += f'{"Random seed":>30}: {self.EDMD_random_seed}\n'
 
         return info
 
@@ -243,7 +291,7 @@ class dmd():
                 imin = self.nspace * iorder
                 imax = self.nspace * (iorder + 1)
                 snap_array_HODMD[imin:imax, :] = \
-                        self.snap_array[:, iorder:self.nsnap-self.order+iorder + 1]
+                    self.snap_array[:, iorder:self.nsnap-self.order+iorder + 1]
 
             x1_array = snap_array_HODMD[:, :-1]
             x2_array = snap_array_HODMD[:, 1:]
@@ -253,7 +301,7 @@ class dmd():
                 x2_array = x2_array[:, ::self.ntshift]
 
             if self.verbose:
-                utils.get_size(snap_array_HODMD, 'snap HODMD')
+                get_size(snap_array_HODMD, 'snap HODMD')
 
         else:
             x1_array = self.snap_array[:, : - 1]
@@ -278,13 +326,24 @@ class dmd():
         self.check_attributes(['time_step'])
 
         if self.verbose:
-            utils.get_size(self.snap_array, 'snap matrix')
+            get_size(self.snap_array, 'snap matrix')
 
         # Step 0: setup the X1 ans X2 snapshot matrices
         x1_array, x2_array = self.setup_snap_array()
-        #x1_array, x2_array = self.setup_snap_array_slow()
 
-        # Step 1: SVD
+        # For EDMD, x1_array will be psi1_array and x2_array will be psi2_array
+        if self.EDMD:
+            x2_array_original = x2_array.copy()
+            freq_array = sample_rff_gaussian(x1_array.shape[0], self.EDMD_nfreq, self.EDMD_sigma, seed=self.EDMD_random_seed)
+            Phi_array = RFF_Finite(freq_array)
+            x1_array = Phi_array(x1_array)
+            x2_array = Phi_array(x2_array)
+
+            if self.verbose:
+                print('\n   EDMD random Fourier features arrays')
+                get_size(x1_array, 'x1_array'); get_size(x2_array, 'x2_array'); print()
+
+        # Step 1: SVD on X1
         self.vprint('SVD on X1...')
 
         with self.timings.add('SVD') as t:
@@ -292,6 +351,7 @@ class dmd():
                 np.linalg.svd(x1_array, full_matrices=False)
             v_array = v_array.conj().T
 
+        # Keep only the significant singular values
         if self.rank is None:
             self.rank = sigma_array[sigma_array > self.sig_threshold].shape[0]
 
@@ -309,99 +369,114 @@ class dmd():
         self.sigma_full_array = sigma_array
         self.sigma_array = sigma_array[:self.rank]
 
-
-        # Inverse of S (it is diagonal, so very fast)
+        # Inverse of the diagonal Sigma matrix
         sigma_inv = np.diag(1.0 / self.sigma_array)
 
         # Step 2: Compute the A matrix in the reduces space
-
         self.vprint('Compute the A matrix...\n')
         with self.timings.add('compute matrix A') as t:
             a_array = u_array.conj().T @ x2_array \
-                           @ v_array @ sigma_inv
+                @ v_array @ sigma_inv
 
         if self.verbose:
-            utils.get_size(a_array, name='matrix A')
-            utils.get_size(u_array, name='matrix U')
-            utils.get_size(v_array, name='matrix V')
-            print('')
+            get_size(a_array, name='matrix A'); get_size(u_array, name='matrix U'); get_size(v_array, name='matrix V'); print()
 
-        # Step 3: Diago of A
-
+        # Step 3: Diago of the Koopman matrix A
         self.vprint('Diago of the A matrix...\n')
         with self.timings.add('diago of matrix A') as t:
             eig_val, eig_vec = np.linalg.eig(a_array)
 
-        # DMD frequencies
+        # DMD frequencies, physicists' notation: exp(i omega t)
         self.omega_array = -1j * np.log(eig_val) / self.time_step
 
-        # To avoid divergence: set the imag part of omega
-        # to zero if it is negative.
+        # To avoid divergence: set the imag part of omega to zero if negative
         self.omega_array[np.imag(self.omega_array) < 0] = \
-        np.real(self.omega_array[np.imag(self.omega_array) < 0])
+            np.real(self.omega_array[np.imag(self.omega_array) < 0])
 
         # Step 4: Compute the DMD modes
         self.vprint('Compute the DMD modes Psi...\n')
         with self.timings.add('compute Psi') as t:
             self.mode_array = x2_array @ v_array \
-                              @ sigma_inv @ eig_vec
+                @ sigma_inv @ eig_vec
 
         if self.verbose:
-            utils.get_size(self.mode_array, name='mode_array')
+            get_size(self.mode_array, name='mode_array')
 
-        #if self.order > 1:
-        #    self.mode_array = self.mode_array[:self.nspace, :]
-        #    x1_array = x1_array[:self.nspace, :]
+        # if self.order > 1:
+        #     self.mode_array = self.mode_array[:self.nspace, :]
+        #     x1_array = x1_array[:self.nspace, :]
 
         # Step 5: Compute mode amplitudes
         self.vprint('Compute mode amplitudes b...\n')
         with self.timings.add('mode ampl (pinv)') as t:
-            self.mode_ampl_array = \
-                np.linalg.pinv(self.mode_array) \
-                @ x1_array[:, 0]
+
+            mode_array_inv = np.linalg.pinv(self.mode_array)
+            self.mode_ampl_array = mode_array_inv @ x1_array[:, 0]
+
+        # Step 6: For EDMD, we need to compute the matrix B,
+        # which is the best approximation of the original X as linear combination
+        if self.EDMD:
+            self.vprint('EDMD: Compute the matrix B...\n')
+            with self.timings.add('pinv(mode_array_inv@Psi)') as t:
+                inv_array = np.linalg.pinv(mode_array_inv @ x2_array)
+
+            with self.timings.add('compute matrix B') as t:
+                self.mode_array = x2_array_original @ inv_array
 
         # Reduce the mode_array to the actual number
         # of spatial points
         self.mode_array = self.mode_array[:self.nspace, :]
+
+        # Clean up the memory
+        del x1_array, x2_array
+        if self.EDMD:
+            del x2_array_original, inv_array
 
     @measure_runtime_and_calls
     def extrapolate(self):
         """
         Extrapolate the DMD dynamics. compute_modes method
         must be ran first.
+
+        .. math::
+            x(t) = \sum_l^r b_l \phi_l e^{i \omega_l t}
         """
 
         self.vprint(f'Extrapolating dynamics for {self.nsnap_extrap} snaps...')
 
+        if self.mode_array is None:
+            raise ValueError('compute_modes() must be ran before extrapolation')
+
         self.vprint(f'Memory required for DMD_traj: {self.nspace * self.nsnap_extrap * 16 / 1024**3:.5f} GB')
 
+        # Step 1: Compute the time array t
         time_array = self.time_step * np.arange(self.nsnap_extrap)
 
+        # Step 2: Compute i * omega_l * t
         with self.timings.add('i x omega x t') as t:
             omega_time = \
                 np.einsum('r,t->rt', 1j * self.omega_array, time_array)
 
+        # Step 3: Compute b_l * exp(i * omega_l * t)
         with self.timings.add('b_l x exp(i x omega x t)') as t:
-            #omega_time = np.einsum('r,rt->rt', self.mode_ampl_array, np.exp(omega_time))
-            # without einsum
             omega_time = self.mode_ampl_array[:, np.newaxis] * np.exp(omega_time)
 
+        # Step 4: Compute the DMD trajectory: sum_l^r b_l * exp(i * omega_l * t)
         with self.timings.add('DMD traj') as t:
+            # mode_array: nspace x nmode
+            # omega_time: nmode x nsnap_extrap
             DMD_traj = self.mode_array @ omega_time
 
+        # Step 5: Normalize the DMD trajectory with initial data
         with self.timings.add('normalize') as t:
-            # Negligible time
             norm_ratio_array = \
                 np.linalg.norm(self.snap_array[:, :], axis=1) /\
-                np.linalg.norm(DMD_traj[:, :self.nsnap-self.order+1], axis=1)
+                np.linalg.norm(DMD_traj[:, :self.nsnap - self.order + 1], axis=1)
 
-            #DMD_traj[:,:] = np.einsum('kt,k->kt',
-            #                DMD_traj[:, :], norm_ratio_array[:])
-            # Faster implementation
             DMD_traj[:, :] *= norm_ratio_array[:, np.newaxis]
 
         if self.verbose:
-            utils.get_size(DMD_traj, 'DMD_traj')
+            get_size(DMD_traj, 'DMD_traj')
 
         return DMD_traj
 
@@ -410,30 +485,39 @@ class dmd():
         """
         Extrapolate the DMD dynamics summed over spatial coordinate.
         compute_modes() method must be ran first.
+
+        .. math::
+            x(t) = \sum_l^r b_l \phi_l e^{i \omega_l t}
+
+        Return \sum_k x_k(t)
         """
 
         self.vprint(f'Extrapolating dynamics for {self.nsnap_extrap} snaps...')
 
+        if self.mode_array is None:
+            raise ValueError('compute_modes() must be ran before extrapolation')
+
         sum_mode_array = np.sum(self.mode_array, axis=0)
 
-        # dt, 2dt, 3dt, ...
+        # Step 1: Compute the time array t
         time_array = self.time_step * np.arange(self.nsnap_extrap)
 
+        # Step 2: Compute i * omega_l * t
         with self.timings.add('i x omega x t') as t:
-            # w * dt, w * 2dt, w * 3dt, ...
             omega_time = \
                 np.einsum('r,t->rt', 1j * self.omega_array, time_array)
 
+        # Step 3: Compute b_l * exp(i * omega_l * t)
         with self.timings.add('b_l x exp(i x omega x t)') as t:
-            # b_l * exp(w * l * dt), b_l * exp(w * l * 2dt), ...
             omega_time = np.einsum('r,rt->rt', self.mode_ampl_array, np.exp(omega_time))
 
-        # Compute the norm. array
+        # Step 4: Compute the DMD trajectory: sum_l^r b_l * exp(i * omega_l * t)
         with self.timings.add('DMD traj') as t:
             # mode_array: nspace x nmode
             # omega_time: nmode x nsnap_extrap
-            DMD_traj_nsnap = self.mode_array @ omega_time[:, :self.nsnap-self.order+1]
+            DMD_traj_nsnap = self.mode_array @ omega_time[:, :self.nsnap - self.order + 1]
 
+        # Step 5: Normalize the DMD trajectory with initial data
         with self.timings.add('normalize') as t:
             # Negligible time, dimension: nspace
             # snap_array: nspace x nsnap
@@ -442,12 +526,14 @@ class dmd():
                 np.linalg.norm(self.snap_array[:, :], axis=1) / \
                 np.linalg.norm(DMD_traj_nsnap[:, :], axis=1)
 
+        # Step 6: Compute the DMD modes summed over spatial coordinate
         with self.timings.add('modes sum') as t:
             # mode_array: nspace x nmode
             # norm_ratio_array: nspace
             # sum_mode_array: nmode
             sum_mode_array = np.sum(self.mode_array * norm_ratio_array[:, np.newaxis], axis=0)
 
+        # Step 7: Compute the DMD trajectory summed over spatial coordinate
         with self.timings.add('DMD_traj_sum') as t:
             # omega_time: nmode x nsnap_extrap
             # sum_mode_array: nmode
@@ -455,10 +541,10 @@ class dmd():
             DMD_traj_sum = np.sum(omega_time[:, :] * sum_mode_array[:, np.newaxis], axis=0)
 
         if self.verbose:
-            utils.get_size(DMD_traj_sum, 'DMD_traj_sum')
-            utils.get_size(norm_ratio_array, 'norm_ratio_array')
-            utils.get_size(sum_mode_array, 'sum_mode_array')
-            utils.get_size(DMD_traj_nsnap, 'DMD_traj_nsnap')
-            utils.get_size(omega_time, 'omega_time')
+            get_size(DMD_traj_sum, 'DMD_traj_sum')
+            get_size(norm_ratio_array, 'norm_ratio_array')
+            get_size(sum_mode_array, 'sum_mode_array')
+            get_size(DMD_traj_nsnap, 'DMD_traj_nsnap')
+            get_size(omega_time, 'omega_time')
 
         return DMD_traj_sum, self.mode_ampl_array[:] * sum_mode_array[:]
