@@ -60,9 +60,6 @@ def plot_gaussian(gauss, x_grid, time_step, gauss_extrap=None):
 
 def main():
 
-    # Save data for tests reference
-    save_data = True
-
     # Number of spatial points
     nspace = 1000
     # Number of time points
@@ -150,6 +147,9 @@ def main():
     plot_tools.plot_trajectories(gauss, time_step, itraj_list, data_extrap=gauss_extrap, ndmd=ndmd)
 
     # Save data to numpy binary files
+    #save_data = True
+    save_data = False
+
     if save_data:
 
         # Initial data, first 5 snapshots

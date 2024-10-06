@@ -26,9 +26,9 @@ def edmd_run():
     # Setup DMD parameters
     edmd_run_loc.time_step = time_step
     edmd_run_loc.verbose = False
-    # hodmd: order = 2
-    edmd_run_loc.order = 2
-    edmd_run_loc.ntshift = 1
+    # hodmd: HODMD_order = 2
+    edmd_run_loc.HODMD_order = 2
+    edmd_run_loc.HODMD_ntshift = 1
 
     # EDMD
     edmd_run_loc.EDMD = True

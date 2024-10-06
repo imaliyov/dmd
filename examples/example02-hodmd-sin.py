@@ -69,8 +69,8 @@ def main():
 
     hodmd_run = dmd.dmd(sin_array[:, :ndmd])
 
-    hodmd_run.order = HODMD_order
-    hodmd_run.ntshift = HODMD_shift
+    hodmd_run.HODMD_order = HODMD_order
+    hodmd_run.HODMD_ntshift = HODMD_shift
 
     hodmd_run.sig_threshold = 1e-13
     hodmd_run.time_step = time_step
