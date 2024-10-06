@@ -29,6 +29,7 @@ def dmd_run():
     dmd_run_loc.HODMD_order = 1
     dmd_run_loc.HODMD_ntshift = 1
     dmd_run_loc.nsnap_extrap = 1500
+    dmd_run_loc.sig_threshold = 1e-7
     dmd_run_loc.compute_modes()
 
     return dmd_run_loc
@@ -36,9 +37,9 @@ def dmd_run():
 
 def test_dmd_shapes(dmd_run):
 
-    np.testing.assert_equal(dmd_run.rank, 16)
+    np.testing.assert_equal(dmd_run.rank, 21)
     np.testing.assert_equal(dmd_run.snap_array.shape, (181, 110))
-    np.testing.assert_equal(dmd_run.mode_array.shape, (181, 16))
+    np.testing.assert_equal(dmd_run.mode_array.shape, (181, 21))
 
 
 def test_dmd_singular_values(dmd_run):

@@ -29,11 +29,12 @@ def edmd_run():
     # hodmd: HODMD_order = 2
     edmd_run_loc.HODMD_order = 2
     edmd_run_loc.HODMD_ntshift = 1
+    edmd_run_loc.sig_threshold = 1e-11
 
     # EDMD
     edmd_run_loc.EDMD = True
     edmd_run_loc.EDMD_nfreq = 1000
-    edmd_run_loc.EDMD_sigma = 10.0
+    edmd_run_loc.EDMD_sigma = 10000.0
     # For reproducibility, set the random seed
     edmd_run_loc.EDMD_random_seed = 123
 
@@ -45,9 +46,9 @@ def edmd_run():
 
 def test_edmd_shapes(edmd_run):
 
-    np.testing.assert_equal(edmd_run.rank, 35)
+    np.testing.assert_equal(edmd_run.rank, 59)
     np.testing.assert_equal(edmd_run.snap_array.shape, (181, 110))
-    np.testing.assert_equal(edmd_run.mode_array.shape, (181, 35))
+    np.testing.assert_equal(edmd_run.mode_array.shape, (181, 59))
 
 
 def test_edmd_singular_values(edmd_run):

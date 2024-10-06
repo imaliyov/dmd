@@ -1,5 +1,5 @@
 """
-Test High-HODMD_order DMD (HODMD) based on the RT-TDDFT data from the H2 molecule.
+Test High-order DMD (HODMD) based on the RT-TDDFT data from the H2 molecule.
 """
 
 import h5py
@@ -30,6 +30,7 @@ def hodmd_run():
     hodmd_run_loc.HODMD_order = 2
     hodmd_run_loc.HODMD_ntshift = 1
     hodmd_run_loc.nsnap_extrap = 1500
+    hodmd_run_loc.sig_threshold = 1e-7
     hodmd_run_loc.compute_modes()
 
     return hodmd_run_loc
@@ -37,9 +38,9 @@ def hodmd_run():
 
 def test_hodmd_shapes(hodmd_run):
 
-    np.testing.assert_equal(hodmd_run.rank, 30)
+    np.testing.assert_equal(hodmd_run.rank, 41)
     np.testing.assert_equal(hodmd_run.snap_array.shape, (181, 110))
-    np.testing.assert_equal(hodmd_run.mode_array.shape, (181, 30))
+    np.testing.assert_equal(hodmd_run.mode_array.shape, (181, 41))
 
 
 def test_hodmd_singular_values(hodmd_run):
