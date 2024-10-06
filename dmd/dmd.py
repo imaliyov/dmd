@@ -9,6 +9,7 @@ import sys
 import pickle
 import numpy as np
 import yaml
+import matplotlib.pyplot as plt
 
 from dmd.tools.utils import get_size
 from dmd.tools.timing import TimingGroup, measure_runtime_and_calls
@@ -22,8 +23,8 @@ class dmd():
     Attributes
     ----------
 
-    order : int
-        Order of DMD. High-order DMD (HODMD) is order > 1.
+    HODMD_order : int
+        HODMD_order of DMD. High-HODMD_order DMD (HODMD) is HODMD_order > 1.
 
     sig_threshold : float
         Threshold for the singular values.
@@ -87,15 +88,19 @@ class dmd():
 
         self.name = 'dmd'
 
-        # High-order DMD (HODMD) parameters
-        self.order = 1
-        self.ntshift = 1
+        # High-HODMD_order DMD (HODMD) parameters
+        self.HODMD_order = 1
+        self.HODMD_ntshift = 1
 
         # Extended DMD (EDMD) parameters
         self.EDMD = False
         self.EDMD_sigma = 10
         self.EDMD_nfreq = 500
         self.EDMD_random_seed = None
+
+        # Physics-informed DMD (piDMD) - enforce the form of the Koopman matrix A
+        self.piDMD = False
+        self.piDMD_enforce = 'unitary' # 'hermitian'
 
         self.sig_threshold = 1e-11
         self.rank = None
@@ -139,17 +144,22 @@ class dmd():
             info += f'{"Singular values threshold":>30}: {self.sig_threshold}\n'
 
         # HODMD
-        info += f'{"DMD order":>30}: {self.order}\n'
+        info += f'{"HODMD_order":>30}: {self.HODMD_order}\n'
 
-        if self.order > 1:
-            info += f'{"ntshift":>30}: {self.ntshift}\n'
+        if self.HODMD_order > 1:
+            info += f'{"HODMD_ntshift":>30}: {self.HODMD_ntshift}\n'
 
         # EDMD
         info += f'{"EDMD":>30}: {self.EDMD}\n'
         if self.EDMD:
-            info += f'{"Number of frequencies":>30}: {self.EDMD_nfreq}\n'
-            info += f'{"Sigma":>30}: {self.EDMD_sigma}\n'
-            info += f'{"Random seed":>30}: {self.EDMD_random_seed}\n'
+            info += f'{"(EDMD) Number of frequencies":>30}: {self.EDMD_nfreq}\n'
+            info += f'{"(EDMD) Sigma":>30}: {self.EDMD_sigma}\n'
+            info += f'{"(EDMD) Random seed":>30}: {self.EDMD_random_seed}\n'
+
+        # piDMD
+        info += f'{"piDMD":>30}: {self.piDMD}\n'
+        if self.piDMD:
+            info += f'{"(piDMD) Enforce A":>30}: {self.piDMD_enforce}\n'
 
         return info
 
@@ -205,7 +215,7 @@ class dmd():
         # Convert sizes to MB
         attribute_sizes_mb = {attr_name: size / (1024 ** 2) for attr_name, size in attribute_sizes.items()}
 
-        # Sort attribute sizes by descending order
+        # Sort attribute sizes by descending HODMD_order
         sorted_sizes = sorted(attribute_sizes_mb.items(), key=lambda x: x[1], reverse=True)
 
         print('\nAttribute sizes (MB):')
@@ -250,8 +260,8 @@ class dmd():
         """
 
         nk = self.nspace
-        ns = self.order
-        ng = self.ntshift
+        ns = self.HODMD_order
+        ng = self.HODMD_ntshift
         ncut = self.nsnap
 
         R0 = self.snap_array
@@ -276,29 +286,29 @@ class dmd():
         Setup the X1 and X2 matrices for DMD or HODMD
         """
 
-        if self.order > 1:
+        if self.HODMD_order > 1:
             # Number of snaps for one of the shifted
             # X matrices
-            nsnap_HODMD = self.nsnap - self.order + 1
+            nsnap_HODMD = self.nsnap - self.HODMD_order + 1
 
             # Spatial dimention of extended array
-            nspace_HODMD = self.nspace * self.order
+            nspace_HODMD = self.nspace * self.HODMD_order
 
             # Construct the extended array of snaps
             snap_array_HODMD = np.zeros((nspace_HODMD, nsnap_HODMD), dtype=self.snap_array.dtype)
 
-            for iorder in range(self.order):
+            for iorder in range(self.HODMD_order):
                 imin = self.nspace * iorder
                 imax = self.nspace * (iorder + 1)
                 snap_array_HODMD[imin:imax, :] = \
-                    self.snap_array[:, iorder:self.nsnap-self.order+iorder + 1]
+                    self.snap_array[:, iorder:self.nsnap-self.HODMD_order+iorder + 1]
 
             x1_array = snap_array_HODMD[:, :-1]
             x2_array = snap_array_HODMD[:, 1:]
 
-            if self.ntshift > 1:
-                x1_array = x1_array[:, ::self.ntshift]
-                x2_array = x2_array[:, ::self.ntshift]
+            if self.HODMD_ntshift > 1:
+                x1_array = x1_array[:, ::self.HODMD_ntshift]
+                x2_array = x2_array[:, ::self.HODMD_ntshift]
 
             if self.verbose:
                 get_size(snap_array_HODMD, 'snap HODMD')
@@ -309,8 +319,44 @@ class dmd():
 
         return x1_array, x2_array
 
-    @measure_runtime_and_calls
     def compute_modes(self):
+        """
+        Compute the DMD modes and frequencies
+        """
+
+        self.vprint('\nComputing piDMD modes...\n')
+
+        self.check_attributes(['time_step'])
+
+        if self.verbose:
+            get_size(self.snap_array, 'snap matrix')
+
+        # Step 0: setup the X1 ans X2 snapshot matrices
+        x1_array, x2_array = self.setup_snap_array()
+
+        # For debug purposes
+        compute_full_a = False
+        #compute_full_a = True
+
+        if compute_full_a:
+            print('Computing the full A matrix...')
+            a_full_array = x2_array @ np.linalg.pinv(x1_array)
+
+            # plot the full A matrix
+            fig, ax = plt.subplots(1, 1, figsize=(10, 8))
+            # log scale
+            sm = ax.imshow(np.log10(np.abs(a_full_array)), cmap='coolwarm')
+            fig.colorbar(sm, ax=ax)
+            plt.show()
+            exit()
+
+        if self.piDMD:
+            self.compute_modes_piDMD(x1_array, x2_array)
+        else:
+            self.compute_modes_standard(x1_array, x2_array)
+
+    @measure_runtime_and_calls
+    def compute_modes_standard(self, x1_array, x2_array):
         """
         Core function of DMD. Compute the DMD spatial modes
         and frequencies.
@@ -320,16 +366,6 @@ class dmd():
         self : object
             The instance of the class
         """
-
-        self.vprint('\nComputing DMD modes...\n')
-
-        self.check_attributes(['time_step'])
-
-        if self.verbose:
-            get_size(self.snap_array, 'snap matrix')
-
-        # Step 0: setup the X1 ans X2 snapshot matrices
-        x1_array, x2_array = self.setup_snap_array()
 
         # For EDMD, x1_array will be psi1_array and x2_array will be psi2_array
         if self.EDMD:
@@ -345,7 +381,6 @@ class dmd():
 
         # Step 1: SVD on X1
         self.vprint('SVD on X1...')
-
         with self.timings.add('SVD') as t:
             u_array, sigma_array, v_array = \
                 np.linalg.svd(x1_array, full_matrices=False)
@@ -402,7 +437,7 @@ class dmd():
         if self.verbose:
             get_size(self.mode_array, name='mode_array')
 
-        # if self.order > 1:
+        # if self.HODMD_order > 1:
         #     self.mode_array = self.mode_array[:self.nspace, :]
         #     x1_array = x1_array[:self.nspace, :]
 
@@ -433,6 +468,131 @@ class dmd():
             del x2_array_original, inv_array
 
     @measure_runtime_and_calls
+    def compute_modes_piDMD(self, x1_array, x2_array):
+        """
+        Compute the DMD modes and frequencies for piDMD.
+        """
+
+        # Step 1: SVD on X1
+        self.vprint('SVD on X1...')
+        with self.timings.add('SVD') as t:
+            u_array, sigma_array, v_array = \
+                np.linalg.svd(x1_array, full_matrices=False)
+            v_array = v_array.conj().T
+
+        #
+        # Compute the Koopman matrix A, enforcing the form
+        #
+        if self.piDMD_enforce == 'unitary':
+
+            snap_prod = x2_array @ x1_array.conj().T
+
+            # SVD on snap_prod
+            self.vprint('SVD on X2 X1^H...')
+            with self.timings.add('SVD X2 X1^H') as t:
+                u_XY_array, sigma_XY_array, vh_XY_array = \
+                    np.linalg.svd(snap_prod)
+
+            a_piDMD_array = u_XY_array @ vh_XY_array
+
+        elif self.piDMD_enforce == 'hermitian':
+
+            c_array = u_array.conj().T @ x2_array @ v_array
+
+            l_array = np.zeros((sigma_array.shape[0], sigma_array.shape[0]), dtype=complex)
+
+            for i in range(sigma_array.shape[0]):
+
+                si = sigma_array[i]
+
+                for j in range(sigma_array.shape[0]):
+
+                    sj = sigma_array[j]
+
+                    sum_squared = si**2 + sj**2
+
+                    if sum_squared < 1e-16 and i==j:
+                        continue
+
+                    C_ij = c_array[i, j]
+                    C_ji = c_array[j, i]
+
+                    l_array[i, j] = 1.0 / sum_squared * (si * C_ji.conj() + sj * C_ij)
+
+            a_piDMD_array = u_array @ l_array @ u_array.conj().T
+
+        else:
+            raise ValueError(f'piDMD enforce {self.piDMD_enforce} not implemented')
+
+        # Keep only the significant singular values
+        if self.rank is None:
+            self.rank = sigma_array[sigma_array > self.sig_threshold].shape[0]
+
+        self.vprint(f'Rank: {self.rank}')
+        self.vprint(f'Done: {t.t_delta:.3f} s\n')
+
+        # Save the SVD full matrices
+        if self.save_svd_matrices:
+            self.u_full_array = u_array.copy()
+            self.v_full_array = v_array.copy()
+
+        v_array = v_array[:, :self.rank]
+        u_array = u_array[:, :self.rank]
+
+        self.sigma_full_array = sigma_array
+        self.sigma_array = sigma_array[:self.rank]
+
+        # Inverse of the diagonal Sigma matrix
+        sigma_inv = np.diag(1.0 / self.sigma_array)
+
+        # Step 2: Compute the A matrix in the reduces space
+        self.vprint('Compute the A matrix...\n')
+        with self.timings.add('compute matrix A') as t:
+            #a_array = u_array.conj().T @ x2_array \
+            #    @ v_array @ sigma_inv
+            a_array = u_array.conj().T @ a_piDMD_array \
+                        @ u_array
+
+        if self.verbose:
+            get_size(a_array, name='matrix A'); get_size(u_array, name='matrix U'); get_size(v_array, name='matrix V'); print()
+
+        # Step 3: Diago of the Koopman matrix A
+        self.vprint('Diago of the A matrix...\n')
+        with self.timings.add('diago of matrix A') as t:
+            eig_val, eig_vec = np.linalg.eig(a_array)
+
+        # DMD frequencies, physicists' notation: exp(i omega t)
+        self.omega_array = -1j * np.log(eig_val) / self.time_step
+
+        # To avoid divergence: set the imag part of omega to zero if negative
+        self.omega_array[np.imag(self.omega_array) < 0] = \
+            np.real(self.omega_array[np.imag(self.omega_array) < 0])
+
+        # Step 4: Compute the DMD modes
+        self.vprint('Compute the DMD modes Psi...\n')
+        with self.timings.add('compute Psi') as t:
+            self.mode_array = x2_array @ v_array \
+                @ sigma_inv @ eig_vec
+
+        if self.verbose:
+            get_size(self.mode_array, name='mode_array')
+
+        # if self.HODMD_order > 1:
+        #     self.mode_array = self.mode_array[:self.nspace, :]
+        #     x1_array = x1_array[:self.nspace, :]
+
+        # Step 5: Compute mode amplitudes
+        self.vprint('Compute mode amplitudes b...\n')
+        with self.timings.add('mode ampl (pinv)') as t:
+
+            mode_array_inv = np.linalg.pinv(self.mode_array)
+            self.mode_ampl_array = mode_array_inv @ x1_array[:, 0]
+
+        # Reduce the mode_array to the actual number
+        # of spatial points
+        self.mode_array = self.mode_array[:self.nspace, :]
+
+    @measure_runtime_and_calls
     def extrapolate(self):
         """
         Extrapolate the DMD dynamics. compute_modes method
@@ -444,8 +604,7 @@ class dmd():
 
         self.vprint(f'Extrapolating dynamics for {self.nsnap_extrap} snaps...')
 
-        if self.mode_array is None:
-            raise ValueError('compute_modes() must be ran before extrapolation')
+        self.check_attributes(['mode_array', 'omega_array', 'mode_ampl_array'])
 
         self.vprint(f'Memory required for DMD_traj: {self.nspace * self.nsnap_extrap * 16 / 1024**3:.5f} GB')
 
@@ -471,7 +630,7 @@ class dmd():
         with self.timings.add('normalize') as t:
             norm_ratio_array = \
                 np.linalg.norm(self.snap_array[:, :], axis=1) /\
-                np.linalg.norm(DMD_traj[:, :self.nsnap - self.order + 1], axis=1)
+                np.linalg.norm(DMD_traj[:, :self.nsnap - self.HODMD_order + 1], axis=1)
 
             DMD_traj[:, :] *= norm_ratio_array[:, np.newaxis]
 
@@ -515,7 +674,7 @@ class dmd():
         with self.timings.add('DMD traj') as t:
             # mode_array: nspace x nmode
             # omega_time: nmode x nsnap_extrap
-            DMD_traj_nsnap = self.mode_array @ omega_time[:, :self.nsnap - self.order + 1]
+            DMD_traj_nsnap = self.mode_array @ omega_time[:, :self.nsnap - self.HODMD_order + 1]
 
         # Step 5: Normalize the DMD trajectory with initial data
         with self.timings.add('normalize') as t:

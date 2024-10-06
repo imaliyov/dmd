@@ -26,8 +26,8 @@ def dmd_run():
     # Setup DMD parameters
     dmd_run_loc.time_step = time_step
     dmd_run_loc.verbose = False
-    dmd_run_loc.order = 1
-    dmd_run_loc.ntshift = 1
+    dmd_run_loc.HODMD_order = 1
+    dmd_run_loc.HODMD_ntshift = 1
     dmd_run_loc.nsnap_extrap = 1500
     dmd_run_loc.compute_modes()
 
