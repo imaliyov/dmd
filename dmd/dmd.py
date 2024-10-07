@@ -387,11 +387,6 @@ class dmd():
         # of spatial points
         self.mode_array = self.mode_array[:self.nspace, :]
 
-        # Clean up the memory
-        del x1_array, x2_array, self.mode_array_inv
-        if self.EDMD:
-            del x2_array_original, inv_array
-
     @measure_runtime_and_calls
     def compute_modes_standard(self, x1_array, x2_array):
         """
@@ -491,33 +486,58 @@ class dmd():
 
         # Step 1: Compute G and A
 
-        #G_array = Psi1_array.conj().T @ weight_array @ Psi1_array
-        G_array = Psi1_array.conj().T @ Psi1_array
+        G_array = Psi1_array.conj().T @ weight_array @ Psi1_array
+        #G_array = Psi1_array.conj().T @ Psi1_array
 
-        #A_array = Psi1_array.conj().T @ weight_array @ Psi2_array
-        A_array = Psi1_array.conj().T @ Psi2_array
+        A_array = Psi1_array.conj().T @ weight_array @ Psi2_array
+        #A_array = Psi1_array.conj().T @ Psi2_array
 
         # Step 2: Compute the SVD of G^(-1/2) A^H G^(-1/2)
         # G is Hermitian
 
-        # Compute G^(-1/2)
-        eigval, eigvec = np.linalg.eigh(G_array)
-        print(G_array)
-        diag_inv_half = np.diag(1.0 / np.sqrt(eigval))
-        G_inv_half = eigvec @ diag_inv_half @ eigvec.conj().T
+        # 2.1: Compute G^(-1/2) with SVD
+        U_G_array, S_G_array, Vh_G_array = np.linalg.svd(G_array)
+        rank_G = S_G_array[S_G_array > 1e-16].shape[0]
+        U_G_array = U_G_array[:, :rank_G]
+        S_G_array = S_G_array[:rank_G]
+        Vh_G_array = Vh_G_array[:rank_G, :]
 
-        # Check G_inv_half by computing G_inv_half @ G_inv_half
-        print('G_inv_half @ G_inv_half @ G == I')
-        print(G_inv_half @ G_inv_half @ G_array)
+        self.vprint(f'Rank of G: {rank_G}')
 
-        print(f'{G_array.shape=}')
-        print(f'{A_array.shape=}')
-        print(f'{G_inv_half.shape=}')
+        S_G_inv_sqrt = np.diag(1.0 / np.sqrt(S_G_array))
 
-        # check that G is Hermitian
-        print(f'G is Hermitian: {np.allclose(G_array, G_array.conj().T)}')
+        G_inv_half = U_G_array @ S_G_inv_sqrt @ Vh_G_array
 
-        exit()
+        # 2.2: Compute the matrix product G^(-1/2) A^H G^(-1/2)
+        GAG_array = G_inv_half @ A_array.conj().T @ G_inv_half
+
+        # 2.3: Compute the SVD of GAG, notations according to Colbrook
+        U1_GAG_array, S_GAG_array, U2h_GAG_array = np.linalg.svd(GAG_array)
+
+        self.sigma_full_array = S_GAG_array
+        self.rank = self.sigma_full_array.shape[0]
+
+        # Step 3: Diago of U2 U1h
+        U2_U1h_array = U2h_GAG_array.conj().T @ U1_GAG_array.conj().T
+
+        eigval_Lambda, eigvec_V = np.linalg.eig(U2_U1h_array)
+
+        # DMD frequencies, physicists' notation: exp(i omega t)
+        self.omega_array = -1j * np.log(eigval_Lambda) / self.time_step
+
+        # To avoid divergence: set the imag part of omega to zero if negative
+        self.omega_array[np.imag(self.omega_array) < 0] = \
+            np.real(self.omega_array[np.imag(self.omega_array) < 0])
+
+        # Compute the DMD modes
+        self.mode_array = eigvec_V
+
+        if self.verbose:
+            get_size(self.mode_array, name='mode_array')
+
+        # Compute the mode amplitudes
+        self.mode_array_inv = np.linalg.pinv(self.mode_array)
+        self.mode_ampl_array = self.mode_array_inv @ x1_array[:, 0]
 
     @measure_runtime_and_calls
     def extrapolate(self):
@@ -530,9 +550,7 @@ class dmd():
         """
 
         self.vprint(f'Extrapolating dynamics for {self.nsnap_extrap} snaps...')
-
         self.check_attributes(['mode_array', 'omega_array', 'mode_ampl_array'])
-
         self.vprint(f'Memory required for DMD_traj: {self.nspace * self.nsnap_extrap * 16 / 1024**3:.5f} GB')
 
         # Step 1: Compute the time array t
@@ -579,6 +597,8 @@ class dmd():
         """
 
         self.vprint(f'Extrapolating dynamics for {self.nsnap_extrap} snaps...')
+        self.check_attributes(['mode_array', 'omega_array', 'mode_ampl_array'])
+        self.vprint(f'Memory required for DMD_traj: {self.nspace * self.nsnap_extrap * 16 / 1024**3:.5f} GB')
 
         if self.mode_array is None:
             raise ValueError('compute_modes() must be ran before extrapolation')
