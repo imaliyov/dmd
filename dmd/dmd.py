@@ -6,6 +6,7 @@ Object-oriented
 
 import os
 import sys
+from scipy.linalg import schur
 import pickle
 import numpy as np
 import yaml
@@ -481,23 +482,26 @@ class dmd():
         weight_array = np.eye(x1_array.shape[1]) * weight
 
         # M x N, according to the paper
-        Psi1_array = x1_array.T
-        Psi2_array = x2_array.T
+        Psi1_array = x1_array.conj().T
+        Psi2_array = x2_array.conj().T
 
         # Step 1: Compute G and A
 
-        G_array = Psi1_array.conj().T @ weight_array @ Psi1_array
-        #G_array = Psi1_array.conj().T @ Psi1_array
+        #G_array = Psi1_array.conj().T @ weight_array @ Psi1_array
+        G_array = Psi1_array.conj().T @ Psi1_array
 
-        A_array = Psi1_array.conj().T @ weight_array @ Psi2_array
-        #A_array = Psi1_array.conj().T @ Psi2_array
+        #A_array = Psi1_array.conj().T @ weight_array @ Psi2_array
+        A_array = Psi1_array.conj().T @ Psi2_array
 
         # Step 2: Compute the SVD of G^(-1/2) A^H G^(-1/2)
         # G is Hermitian
 
-        # 2.1: Compute G^(-1/2) with SVD
-        U_G_array, S_G_array, Vh_G_array = np.linalg.svd(G_array)
-        rank_G = S_G_array[S_G_array > 1e-16].shape[0]
+        # 2.1: Compute G^(-1/2)
+        #G_eigval, G_eigvec = np.linalg.eigh(G_array)
+        #G_inv_sqrt = G_eigvec @ np.diag(1.0 / np.sqrt(G_eigval)) @ G_eigvec.conj().T
+
+        U_G_array, S_G_array, Vh_G_array = np.linalg.svd(G_array, hermitian=True)
+        rank_G = S_G_array[S_G_array > 1e-10].shape[0]
         U_G_array = U_G_array[:, :rank_G]
         S_G_array = S_G_array[:rank_G]
         Vh_G_array = Vh_G_array[:rank_G, :]
@@ -506,10 +510,10 @@ class dmd():
 
         S_G_inv_sqrt = np.diag(1.0 / np.sqrt(S_G_array))
 
-        G_inv_half = U_G_array @ S_G_inv_sqrt @ Vh_G_array
+        G_inv_sqrt = U_G_array @ S_G_inv_sqrt @ U_G_array.conj().T
 
         # 2.2: Compute the matrix product G^(-1/2) A^H G^(-1/2)
-        GAG_array = G_inv_half @ A_array.conj().T @ G_inv_half
+        GAG_array = G_inv_sqrt @ A_array.conj().T @ G_inv_sqrt
 
         # 2.3: Compute the SVD of GAG, notations according to Colbrook
         U1_GAG_array, S_GAG_array, U2h_GAG_array = np.linalg.svd(GAG_array)
@@ -521,6 +525,10 @@ class dmd():
         U2_U1h_array = U2h_GAG_array.conj().T @ U1_GAG_array.conj().T
 
         eigval_Lambda, eigvec_V = np.linalg.eig(U2_U1h_array)
+        # Schur to enforce the orthonormal basis
+        #T_array, Z_array = schur(U2_U1h_array, output='complex')
+        #eigvec_V = Z_array
+        #eigval_Lambda = np.diag(T_array)
 
         # DMD frequencies, physicists' notation: exp(i omega t)
         self.omega_array = -1j * np.log(eigval_Lambda) / self.time_step
@@ -530,7 +538,7 @@ class dmd():
             np.real(self.omega_array[np.imag(self.omega_array) < 0])
 
         # Compute the DMD modes
-        self.mode_array = eigvec_V
+        self.mode_array = G_inv_sqrt @ eigvec_V
 
         if self.verbose:
             get_size(self.mode_array, name='mode_array')
