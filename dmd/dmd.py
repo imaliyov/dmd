@@ -89,10 +89,6 @@ class dmd():
 
         self.name = 'dmd'
 
-        # Scale factor to keep the data within the range
-        self.scale_factor = 1.0
-        self.apply_scaling = apply_scaling
-
         # High-HODMD_order DMD (HODMD) parameters
         self.HODMD_order = 1
         self.HODMD_ntshift = 1
@@ -110,7 +106,10 @@ class dmd():
         self.rank = None
 
         self.snap_array = snap_array
-        # self.snap_array = snap_array.astype(np.complex128)
+        # Scale factor to keep the data within the range
+        self.scale_factor = 1.0
+        self.apply_scaling = apply_scaling
+
         if self.apply_scaling:
             self.scale_factor = np.max(np.abs(self.snap_array))
             snap_array_copy = self.snap_array.copy()
@@ -124,6 +123,7 @@ class dmd():
         self.nspace, self.nsnap = snap_array.shape
 
         self.nsnap_extrap = self.nsnap + 1
+        self.isnap_extrap_first = 0
 
         self.sigma_array = None
         self.mode_array = None
@@ -558,11 +558,14 @@ class dmd():
         """
 
         self.vprint(f'Extrapolating dynamics for {self.nsnap_extrap} snaps...')
+        if self.isnap_extrap_first != 0:
+            self.vprint(f'First snap for extrapolation: {self.isnap_extrap_first}')
+
         self.check_attributes(['mode_array', 'omega_array', 'mode_ampl_array'])
         self.vprint(f'Memory required for DMD_traj: {self.nspace * self.nsnap_extrap * 16 / 1024**3:.5f} GB')
 
         # Step 1: Compute the time array t
-        time_array = self.time_step * np.arange(self.nsnap_extrap)
+        time_array = self.time_step * np.arange(self.isnap_extrap_first, self.nsnap_extrap + self.isnap_extrap_first)
 
         # Step 2: Compute i * omega_l * t
         with self.timings.add('i x omega x t') as t:
@@ -605,6 +608,9 @@ class dmd():
         """
 
         self.vprint(f'Extrapolating dynamics for {self.nsnap_extrap} snaps...')
+        if self.isnap_extrap_first != 0:
+            self.vprint(f'First snap for extrapolation: {self.isnap_extrap_first}')
+
         self.check_attributes(['mode_array', 'omega_array', 'mode_ampl_array'])
         self.vprint(f'Memory required for DMD_traj: {self.nspace * self.nsnap_extrap * 16 / 1024**3:.5f} GB')
 
@@ -613,23 +619,28 @@ class dmd():
 
         sum_mode_array = np.sum(self.mode_array, axis=0)
 
-        # Step 1: Compute the time array t
-        time_array = self.time_step * np.arange(self.nsnap_extrap)
+        # Step 1: Compute the time array
+        time_array = self.time_step * np.arange(self.isnap_extrap_first, self.nsnap_extrap + self.isnap_extrap_first)
+        #time_array = self.time_step * np.arange(self.nsnap_extrap)
 
         # Step 2: Compute i * omega_l * t
         with self.timings.add('i x omega x t') as t:
-            omega_time = \
-                np.einsum('r,t->rt', 1j * self.omega_array, time_array)
+            omega_time = np.einsum('r,t->rt', 1j * self.omega_array, time_array)
 
         # Step 3: Compute b_l * exp(i * omega_l * t)
         with self.timings.add('b_l x exp(i x omega x t)') as t:
             omega_time = np.einsum('r,rt->rt', self.mode_ampl_array, np.exp(omega_time))
 
         # Step 4: Compute the DMD trajectory: sum_l^r b_l * exp(i * omega_l * t)
+        # Exactly within the 0-nsnap range
         with self.timings.add('DMD traj') as t:
             # mode_array: nspace x nmode
             # omega_time: nmode x nsnap_extrap
-            DMD_traj_nsnap = self.mode_array @ omega_time[:, :self.nsnap - self.HODMD_order + 1]
+            time_array_nsnap = self.time_step * np.arange(self.nsnap)
+            omega_time_nsnap = np.einsum('r,t->rt', 1j * self.omega_array, time_array_nsnap)
+            omega_time_nsnap = np.einsum('r,rt->rt', self.mode_ampl_array, np.exp(omega_time_nsnap))
+            DMD_traj_nsnap = self.mode_array @ omega_time_nsnap[:, :]
+            #DMD_traj_nsnap = self.mode_array @ omega_time[:, :self.nsnap - self.HODMD_order + 1]
 
         # Step 5: Normalize the DMD trajectory with initial data
         with self.timings.add('normalize') as t:
