@@ -501,7 +501,7 @@ class dmd():
         #G_inv_sqrt = G_eigvec @ np.diag(1.0 / np.sqrt(G_eigval)) @ G_eigvec.conj().T
 
         U_G_array, S_G_array, Vh_G_array = np.linalg.svd(G_array, hermitian=True)
-        rank_G = S_G_array[S_G_array > 1e-10].shape[0]
+        rank_G = S_G_array[S_G_array > 1e-12].shape[0]
         U_G_array = U_G_array[:, :rank_G]
         S_G_array = S_G_array[:rank_G]
         Vh_G_array = Vh_G_array[:rank_G, :]
@@ -569,8 +569,7 @@ class dmd():
 
         # Step 2: Compute i * omega_l * t
         with self.timings.add('i x omega x t') as t:
-            omega_time = \
-                np.einsum('r,t->rt', 1j * self.omega_array, time_array)
+            omega_time = np.einsum('r,t->rt', 1j * self.omega_array, time_array)
 
         # Step 3: Compute b_l * exp(i * omega_l * t)
         with self.timings.add('b_l x exp(i x omega x t)') as t:
@@ -582,11 +581,17 @@ class dmd():
             # omega_time: nmode x nsnap_extrap
             DMD_traj = self.mode_array @ omega_time
 
+            # Trajectory from 0 to nsnap-1 for normalization
+            time_array_nsnap = self.time_step * np.arange(self.nsnap)
+            omega_time_nsnap = np.einsum('r,t->rt', 1j * self.omega_array, time_array_nsnap)
+            omega_time_nsnap = np.einsum('r,rt->rt', self.mode_ampl_array, np.exp(omega_time_nsnap))
+            DMD_traj_nsnap = self.mode_array @ omega_time_nsnap[:, :]
+
         # Step 5: Normalize the DMD trajectory with initial data
         with self.timings.add('normalize') as t:
             norm_ratio_array = \
                 np.linalg.norm(self.snap_array[:, :], axis=1) * self.scale_factor / \
-                np.linalg.norm(DMD_traj[:, :self.nsnap - self.HODMD_order + 1], axis=1)
+                np.linalg.norm(DMD_traj_nsnap[:, :], axis=1)
 
             DMD_traj[:, :] *= norm_ratio_array[:, np.newaxis]
 
@@ -614,14 +619,10 @@ class dmd():
         self.check_attributes(['mode_array', 'omega_array', 'mode_ampl_array'])
         self.vprint(f'Memory required for DMD_traj: {self.nspace * self.nsnap_extrap * 16 / 1024**3:.5f} GB')
 
-        if self.mode_array is None:
-            raise ValueError('compute_modes() must be ran before extrapolation')
-
         sum_mode_array = np.sum(self.mode_array, axis=0)
 
         # Step 1: Compute the time array
         time_array = self.time_step * np.arange(self.isnap_extrap_first, self.nsnap_extrap + self.isnap_extrap_first)
-        #time_array = self.time_step * np.arange(self.nsnap_extrap)
 
         # Step 2: Compute i * omega_l * t
         with self.timings.add('i x omega x t') as t:
@@ -640,13 +641,13 @@ class dmd():
             omega_time_nsnap = np.einsum('r,t->rt', 1j * self.omega_array, time_array_nsnap)
             omega_time_nsnap = np.einsum('r,rt->rt', self.mode_ampl_array, np.exp(omega_time_nsnap))
             DMD_traj_nsnap = self.mode_array @ omega_time_nsnap[:, :]
-            #DMD_traj_nsnap = self.mode_array @ omega_time[:, :self.nsnap - self.HODMD_order + 1]
 
         # Step 5: Normalize the DMD trajectory with initial data
         with self.timings.add('normalize') as t:
             # Negligible time, dimension: nspace
             # snap_array: nspace x nsnap
             # DMD_traj_nsnap: nspace x nsnap
+
             norm_ratio_array = \
                 np.linalg.norm(self.snap_array[:, :], axis=1) * self.scale_factor / \
                 np.linalg.norm(DMD_traj_nsnap[:, :], axis=1)
