@@ -501,7 +501,7 @@ class dmd():
         #G_inv_sqrt = G_eigvec @ np.diag(1.0 / np.sqrt(G_eigval)) @ G_eigvec.conj().T
 
         U_G_array, S_G_array, Vh_G_array = np.linalg.svd(G_array, hermitian=True)
-        rank_G = S_G_array[S_G_array > 1e-12].shape[0]
+        rank_G = S_G_array[S_G_array > 1e-10].shape[0]
         U_G_array = U_G_array[:, :rank_G]
         S_G_array = S_G_array[:rank_G]
         Vh_G_array = Vh_G_array[:rank_G, :]
@@ -531,7 +531,9 @@ class dmd():
         #eigval_Lambda = np.diag(T_array)
 
         # DMD frequencies, physicists' notation: exp(i omega t)
-        self.omega_array = -1j * np.log(eigval_Lambda) / self.time_step
+        #self.omega_array = -1j * np.log(eigval_Lambda) / self.time_step
+        # for some reason, there is no '-' sign as in classic DMD
+        self.omega_array = 1j * np.log(eigval_Lambda) / self.time_step
 
         # To avoid divergence: set the imag part of omega to zero if negative
         self.omega_array[np.imag(self.omega_array) < 0] = \
@@ -618,8 +620,6 @@ class dmd():
 
         self.check_attributes(['mode_array', 'omega_array', 'mode_ampl_array'])
         self.vprint(f'Memory required for DMD_traj: {self.nspace * self.nsnap_extrap * 16 / 1024**3:.5f} GB')
-
-        sum_mode_array = np.sum(self.mode_array, axis=0)
 
         # Step 1: Compute the time array
         time_array = self.time_step * np.arange(self.isnap_extrap_first, self.nsnap_extrap + self.isnap_extrap_first)
