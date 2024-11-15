@@ -370,7 +370,7 @@ class dmd():
             exit()
 
         if self.mpDMD:
-            self.compute_modes_mpDMD(x1_array, x2_array)
+            self.compute_modes_mpDMD2(x1_array, x2_array)
         else:
             self.compute_modes_standard(x1_array, x2_array)
 
@@ -541,6 +541,74 @@ class dmd():
 
         # Compute the DMD modes
         self.mode_array = G_inv_sqrt @ eigvec_V
+
+        if self.verbose:
+            get_size(self.mode_array, name='mode_array')
+
+        # Compute the mode amplitudes
+        self.mode_array_inv = np.linalg.pinv(self.mode_array)
+        self.mode_ampl_array = self.mode_array_inv @ x1_array[:, 0]
+
+    @measure_runtime_and_calls
+    def compute_modes_mpDMD2(self, x1_array, x2_array):
+        """
+        Measure-preserving DMD (mpDMD) method.
+        From section V (overleaf)
+        """
+
+        # Step 0: Prerequisites
+        # uniform sampling
+        weight = 1.0 / x1_array.shape[1]
+        weight_array = np.eye(x1_array.shape[1]) * weight
+
+        # M x N, according to the paper
+        Psi1_array = x1_array.conj().T
+        Psi2_array = x2_array.conj().T
+
+        # Step 1: SVD on Psi1.conj().T
+
+        # 1.1: SVD
+        U_Psi1_array, S_Psi1_array, Vh_Psi1_array = np.linalg.svd(Psi1_array.conj().T, full_matrices=False)
+
+        # 1.2: Truncate
+        S_Psi1_threshold = 1e-6
+        rank_Psi1 = S_Psi1_array[S_Psi1_array > S_Psi1_threshold].shape[0]
+
+        self.sigma_full_array = S_Psi1_array
+        self.rank = rank_Psi1
+
+        U_Psi1_array = U_Psi1_array[:, :rank_Psi1]
+        S_Psi1_array = S_Psi1_array[:rank_Psi1]
+        Vh_Psi1_array = Vh_Psi1_array[:rank_Psi1, :]
+
+        S_inv_array = np.diag(1.0 / S_Psi1_array)
+
+        # Step 2: Define the T_array and compute reduced matrix Ar
+
+        # 2.1: T_array
+        T_array = U_Psi1_array @ S_inv_array
+
+        # 2.2: Ar_array
+        Ar_array = T_array.conj().T @ Psi1_array.conj().T @ Psi2_array @ T_array
+
+        # Step 3: Compute the SVD of Ar
+        U1_Ar_array, S_Ar_array, U2h_Ar_array = np.linalg.svd(Ar_array, full_matrices=False)
+
+        # Step 4: Diago of U2 U1h
+        U2_U1h_array = U2h_Ar_array.conj().T @ U1_Ar_array.conj().T
+
+        eigval_Lambda, eigvec_V_tilda = np.linalg.eig(U2_U1h_array)
+
+        # Step 5: Re-transform to original features
+        eigvec_V = T_array @ eigvec_V_tilda
+
+        self.mode_array = eigvec_V
+
+        self.omega_array = 1j * np.log(eigval_Lambda) / self.time_step
+
+        # To avoid divergence: set the imag part of omega to zero if negative
+        self.omega_array[np.imag(self.omega_array) < 0] = \
+            np.real(self.omega_array[np.imag(self.omega_array) < 0])
 
         if self.verbose:
             get_size(self.mode_array, name='mode_array')
