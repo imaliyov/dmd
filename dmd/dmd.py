@@ -309,7 +309,7 @@ class dmd():
                 imin = self.nspace * iorder
                 imax = self.nspace * (iorder + 1)
                 snap_array_HODMD[imin:imax, :] = \
-                    self.snap_array[:, iorder:self.nsnap-self.HODMD_order+iorder + 1]
+                    self.snap_array[:, iorder:self.nsnap - self.HODMD_order + iorder + 1]
 
             x1_array = snap_array_HODMD[:, :-1]
             x2_array = snap_array_HODMD[:, 1:]
@@ -370,7 +370,8 @@ class dmd():
             exit()
 
         if self.mpDMD:
-            self.compute_modes_mpDMD2(x1_array, x2_array)
+            self.compute_modes_mpDMD(x1_array, x2_array)
+            #self.compute_modes_mpDMD2(x1_array, x2_array)
         else:
             self.compute_modes_standard(x1_array, x2_array)
 
@@ -445,9 +446,17 @@ class dmd():
         # DMD frequencies, physicists' notation: exp(i omega t)
         self.omega_array = -1j * np.log(eig_val) / self.time_step
 
+        self.RAW_omega_array = self.omega_array.copy()
+
         # To avoid divergence: set the imag part of omega to zero if negative
+        if np.any(np.imag(self.omega_array) < 0):
+            print('Warning: negative imaginary part of omega')
+            print(f'{np.min(np.imag(self.omega_array))=}')
+
         self.omega_array[np.imag(self.omega_array) < 0] = \
             np.real(self.omega_array[np.imag(self.omega_array) < 0])
+            #np.real(self.omega_array[np.imag(self.omega_array) < 0]) - \
+            #1j * 10000.0 * np.imag(self.omega_array[np.imag(self.omega_array) < 0])
 
         # Step 4: Compute the DMD modes
         self.vprint('Compute the DMD modes Psi...\n')
@@ -500,6 +509,7 @@ class dmd():
         #G_eigval, G_eigvec = np.linalg.eigh(G_array)
         #G_inv_sqrt = G_eigvec @ np.diag(1.0 / np.sqrt(G_eigval)) @ G_eigvec.conj().T
 
+        self.vprint(f'Computing SVD of G of shape {G_array.shape}...')
         U_G_array, S_G_array, Vh_G_array = np.linalg.svd(G_array, hermitian=True)
         rank_G = S_G_array[S_G_array > 1e-10].shape[0]
         U_G_array = U_G_array[:, :rank_G]
@@ -516,14 +526,25 @@ class dmd():
         GAG_array = G_inv_sqrt @ A_array.conj().T @ G_inv_sqrt
 
         # 2.3: Compute the SVD of GAG, notations according to Colbrook
+        self.vprint(f'Computing SVD of GAG of shape {GAG_array.shape}...')
         U1_GAG_array, S_GAG_array, U2h_GAG_array = np.linalg.svd(GAG_array)
 
         self.sigma_full_array = S_GAG_array
-        self.rank = self.sigma_full_array.shape[0]
+        # For full rank:
+        #self.rank = self.sigma_full_array.shape[0]
+
+        # Truncate the SVD:
+        self.rank = S_GAG_array[S_GAG_array > 1e-10].shape[0]
+        self.vprint(f'Rank of GAG: {self.rank}')
+        U1_GAG_array = U1_GAG_array[:, :self.rank]
+        S_GAG_array = S_GAG_array[:self.rank]
+        U2h_GAG_array = U2h_GAG_array[:self.rank, :]
 
         # Step 3: Diago of U2 U1h
+        self.vprint(f'Matmul of U2h and U1...')
         U2_U1h_array = U2h_GAG_array.conj().T @ U1_GAG_array.conj().T
 
+        self.vprint(f'Diago of U2 U1h of shape {U2_U1h_array.shape}...')
         eigval_Lambda, eigvec_V = np.linalg.eig(U2_U1h_array)
         # Schur to enforce the orthonormal basis
         #T_array, Z_array = schur(U2_U1h_array, output='complex')
